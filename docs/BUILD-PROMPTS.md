@@ -37,12 +37,12 @@ Here is the error: <paste only the error + the file:line>. Read only the files i
 
 ## Stage 0 — Manual setup (no AI needed)
 
-- [ ] Install PHP 8.3+, Composer, Node.js LTS, MySQL (or **Laravel Herd** on Windows/Mac, which bundles PHP + Composer)
-- [ ] Install Git, create a GitHub repo (`synop`), clone it
-- [ ] Install the VS Code extensions from the list in the chat
-- [ ] Create a `docs/` folder
-- [ ] Put `CLAUDE.md` in the repo root and this file in `docs/BUILD-PROMPTS.md`
-- [ ] Commit: `git add . && git commit -m "docs: agent instructions and build playbook"`
+- [x] Install PHP 8.3+, Composer, Node.js LTS, MySQL (or **Laravel Herd** on Windows/Mac, which bundles PHP + Composer)
+- [x] Install Git, create a GitHub repo (`synop`), clone it
+- [x] Install the VS Code extensions from the list in the chat
+- [x] Create a `docs/` folder
+- [x] Put `CLAUDE.md` in the repo root and this file in `docs/BUILD-PROMPTS.md`
+- [x] Commit: `git add . && git commit -m "docs: agent instructions and build playbook"`
 
 ---
 
