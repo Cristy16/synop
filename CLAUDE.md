@@ -17,7 +17,7 @@ Each user's data is private. No user can see or change another user's data.
 | File | Contents | Status |
 |---|---|---|
 | `docs/PRD.md` | Features, user stories, MVP scope | Done (approved 2026-11-16) |
-| `docs/DATABASE.md` | Schema, ERD, conventions | To be written (Prompt 1.2) |
+| `docs/DATABASE.md` | Schema, ERD, conventions | Done (approved 2026-11-16) |
 | `docs/ARCHITECTURE.md` | Stack, folders, security model, engines | To be written (Prompt 1.3) |
 | `docs/ROADMAP.md` | Phases and progress checkboxes | To be written (Prompt 1.4) |
 | `docs/DECISIONS.md` | Decision log | To be written (Prompt 1.4) |
