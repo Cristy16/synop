@@ -18,9 +18,9 @@ Each user's data is private. No user can see or change another user's data.
 |---|---|---|
 | `docs/PRD.md` | Features, user stories, MVP scope | Done (approved 2026-11-16) |
 | `docs/DATABASE.md` | Schema, ERD, conventions | Done (approved 2026-11-16) |
-| `docs/ARCHITECTURE.md` | Stack, folders, security model, engines | To be written (Prompt 1.3) |
-| `docs/ROADMAP.md` | Phases and progress checkboxes | To be written (Prompt 1.4) |
-| `docs/DECISIONS.md` | Decision log | To be written (Prompt 1.4) |
+| `docs/ARCHITECTURE.md` | Stack, folders, security model, engines | Done (approved 2026-11-16) |
+| `docs/ROADMAP.md` | Phases and progress checkboxes | Done (2026-11-16) |
+| `docs/DECISIONS.md` | Decision log | Done (2026-11-16) |
 | `docs/BUILD-PROMPTS.md` | The owner's prompt playbook | Exists. Do not edit unless asked. |
 
 If a doc is marked "To be written", do not assume its contents. Ask.
@@ -51,6 +51,14 @@ If a doc is marked "To be written", do not assume its contents. Ask.
 6. Never edit `.env`. Never run `migrate:fresh`, `db:wipe`, or delete files without asking.
 7. Make small, focused changes. Don't refactor unrelated code.
 8. API keys stay server-side only.
+9. `*_at` columns are UTC instants. `*_on` dates and `*_time` times are stored as the user means them, never converted. "Today" = `now($user->timezone)`.
+10. Child tables carry `user_id` too (copied from the parent). Validate every foreign id with `Rule::exists(...)->where('user_id', ...)`. A record must never link to another user's record.
+11. Another user's record returns 404, not 403. Livewire properties holding record ids are `#[Locked]`.
+12. Writes that touch several rows (e.g. payment + transaction + task) happen in one Action inside `DB::transaction()`.
+13. Parse money from strings with integer maths, via `Money`. Never cast money to float.
+14. Enums are VARCHAR columns + PHP backed enums, not MySQL ENUM. Polymorphic types use morph map aliases.
+15. Recurrence only goes through `ScheduleEngine`. Change schedules only via the `UpdateSchedule` Action (rules are versioned).
+16. The AI never computes money; PHP does and the AI explains. Every AI call has a fallback and counts toward the 10/day limit. Never send names, contacts or account details.
 
 ## Workflow
 
