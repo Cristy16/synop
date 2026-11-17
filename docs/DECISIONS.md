@@ -203,3 +203,9 @@ Newest entries go at the bottom. Each entry gives the date, the decision, the re
 - **Decision:** One rule for the whole app: anything that changes data is an Action (`CreateTask`, `CompleteTask`, `RecordDebtPayment`…); anything that answers a question or talks to an outside system is a Service (`ScheduleEngine`, `SafeToSpend`, `AiClient`). Tasks get Actions, not a `TaskService`. When the playbook names a `*Service` for writes (e.g. Prompt 3.1 `TaskService`, Prompt 4.1 `FinanceService`), build Actions instead. A Service is still used for read-only calculations such as balances.
 - **Reason:** A single rule with no exceptions; small one-purpose classes that are easy to test; module services (e.g. `FinanceService`) would grow into very large files.
 - **Rejected:** `TaskService` for tasks only (makes tasks a one-off exception); one Service per module (large files that mix reads and writes).
+
+### D-032 · Extend starter-kit tables with new migrations; use the starter kit's tooling
+- **Date:** 2026-11-18 · **Source:** Scaffold (Laravel 13, Livewire starter kit)
+- **Decision:** Columns added to starter-kit tables (first: `users.timezone`, `users.currency`) go in new migrations; the starter kit's own migrations are never edited. `config/app.php` reads `APP_TIMEZONE` (default `UTC`). Formatting uses the kit's `composer lint` script and its `pint.json` (`laravel` preset) instead of a custom setup.
+- **Reason:** Starter-kit files stay comparable with upstream, and each schema change is a separate, reversible step.
+- **Rejected:** Editing `create_users_table`; a separate `composer format` script that duplicates `composer lint`.

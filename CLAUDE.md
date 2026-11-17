@@ -35,11 +35,15 @@ If a doc is marked "To be written", do not assume its contents. Ask.
 
 ## Commands
 
-<!-- Fill in after scaffolding (Prompt 2.1) -->
-- Serve: `php artisan serve` + `npm run dev`
+Run from the project root. MySQL comes from XAMPP: start it in the XAMPP Control Panel first. Database: `synop`.
+
+- Serve: `composer run dev` (Laravel server, Vite, queue and logs together; app at http://localhost:8000)
 - Migrate: `php artisan migrate`
-- Test: `php artisan test`
-- Format: `./vendor/bin/pint`
+- Test: `php artisan test` (tests run on in-memory SQLite, not MySQL; see `phpunit.xml`)
+- Full check: `composer test` (Pint check + PHPStan + tests; run before committing)
+- Format: `composer lint` (Pint, `laravel` preset); check only: `composer lint:check`
+- Static analysis: `composer types:check` (PHPStan/Larastan)
+- New migration: `php artisan make:migration <name>`
 
 ## Hard rules
 

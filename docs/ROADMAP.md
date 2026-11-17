@@ -1,6 +1,6 @@
 # Synop — Roadmap
 
-**Last updated:** 2026-11-16
+**Last updated:** 2026-11-18
 **Sources:** [PRD.md](PRD.md), [DATABASE.md](DATABASE.md), [ARCHITECTURE.md](ARCHITECTURE.md). Build prompts: [BUILD-PROMPTS.md](BUILD-PROMPTS.md).
 
 Tick items when they are finished **and tested**. Every phase that adds user-owned data ends with a passing cross-user isolation test for each new model.
@@ -16,10 +16,10 @@ Tick items when they are finished **and tested**. Every phase that adds user-own
 - [x] ROADMAP.md and DECISIONS.md
 
 **Scaffold**
-- [ ] Laravel app with the Livewire starter kit, MySQL and Pest
-- [ ] `APP_TIMEZONE=UTC`, Pint configured, `.env.example` complete, `.env` gitignored
-- [ ] Commands section of CLAUDE.md filled in
-- [ ] Register, log in and `php artisan test` all work
+- [x] Laravel app with the Livewire starter kit, MySQL and Pest
+- [x] `APP_TIMEZONE=UTC`, Pint configured, `.env.example` complete, `.env` gitignored
+- [x] Commands section of CLAUDE.md filled in
+- [x] Register, log in and `php artisan test` all work
 
 **Multi-user base**
 - [ ] `users` columns: `timezone` (Asia/Manila), `currency` (PHP), `safety_buffer_cents`, `payments_due_days` (7), `morning_summary_time`
