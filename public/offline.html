@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#171717">
+    <title>Offline - Synop</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <style>
+        :root { color-scheme: light dark; }
+        body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+               font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: #fafafa; color: #171717; }
+        main { max-width: 22rem; padding: 1.5rem; text-align: center; }
+        img { width: 64px; height: 64px; border-radius: 14px; }
+        h1 { font-size: 1.25rem; margin: 1rem 0 .5rem; }
+        p { color: #525252; line-height: 1.5; margin: 0 0 1.5rem; }
+        button { min-height: 44px; padding: 0 1.25rem; border: 0; border-radius: .5rem; background: #171717; color: #fafafa; font: inherit; cursor: pointer; }
+        @media (prefers-color-scheme: dark) {
+            body { background: #262626; color: #fafafa; }
+            p { color: #a3a3a3; }
+            button { background: #fafafa; color: #171717; }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <img src="/icons/icon-192.png" alt="">
+        <h1>You're offline</h1>
+        <p>Synop needs the internet to load your data. Check your connection and try again.</p>
+        <button type="button" onclick="location.reload()">Try again</button>
+    </main>
+</body>
+</html>

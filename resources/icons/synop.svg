@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Synop icon source: "Sy". PNGs in public/icons are rendered from this file (D-052). -->
+  <rect width="512" height="512" rx="112" fill="#171717"/>
+  <text x="256" y="262" text-anchor="middle" dominant-baseline="central"
+        font-family="'Instrument Sans', 'Segoe UI', Arial, sans-serif" font-size="268" font-weight="700"
+        letter-spacing="-10" fill="#fafafa">Sy</text>
+</svg>
