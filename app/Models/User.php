@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Casts\MoneyCast;
+use App\Enums\Currency;
+use App\Support\Money;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -22,7 +25,10 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property string $timezone
- * @property string $currency
+ * @property Currency $currency
+ * @property Money $safety_buffer_cents
+ * @property int $payments_due_days
+ * @property string|null $morning_summary_time
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
@@ -38,6 +44,18 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
     /**
+     * Defaults for a new User object, matching the column defaults in the database.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'timezone' => 'Asia/Manila',
+        'currency' => 'PHP',
+        'safety_buffer_cents' => 0,
+        'payments_due_days' => 7,
+    ];
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -47,6 +65,9 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'currency' => Currency::class,
+            'safety_buffer_cents' => MoneyCast::class,
+            'payments_due_days' => 'integer',
         ];
     }
 

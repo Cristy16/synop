@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Currency;
 use App\Support\Money;
 
 test('parses user input into centavos', function (string $input, int $cents) {
@@ -58,7 +59,7 @@ test('becomes its centavos integer in JSON', function () {
 });
 
 test('money() helper formats Money, integers and null', function () {
-    expect(money(Money::fromCents(123450)))->toBe('₱1,234.50')
-        ->and(money(99))->toBe('₱0.99')
+    expect(money(Money::fromCents(123450), Currency::PHP))->toBe('₱1,234.50')
+        ->and(money(99, Currency::USD))->toBe('$0.99')
         ->and(money(null))->toBe('');
 });

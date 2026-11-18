@@ -133,7 +133,7 @@ Column notes: **FK** = foreign key, **N** = nullable. `user_id` (FK → users, c
 |---|---|---|
 | id, name, email, password, remember_token, email_verified_at | Laravel default | |
 | timezone | VARCHAR(64) | Default `Asia/Manila`. IANA name. |
-| currency | CHAR(3) | Default `PHP`. Display only in MVP. |
+| currency | CHAR(3) | Default `PHP`. Display only in MVP. One of `PHP`, `USD`, `EUR`, `GBP`, `SGD`, `AUD`, `CAD`, `HKD` (`App\Enums\Currency`, D-035). |
 | safety_buffer_cents | BIGINT | Default 0. Used by safe-to-spend. |
 | morning_summary_time | TIME, N | Local time for the web-push summary (Phase 8). |
 | payments_due_days | TINYINT unsigned | Default 7. Today's "Payments due" shows debts due within this many days, plus overdue. |

@@ -22,12 +22,12 @@ Tick items when they are finished **and tested**. Every phase that adds user-own
 - [x] Register, log in and `php artisan test` all work
 
 **Multi-user base**
-- [ ] `users` columns: `timezone` (Asia/Manila), `currency` (PHP), `safety_buffer_cents`, `payments_due_days` (7), `morning_summary_time`
+- [x] `users` columns: `timezone` (Asia/Manila), `currency` (PHP), `safety_buffer_cents`, `payments_due_days` (7), `morning_summary_time`
 - [x] Morph map registered with `Relation::enforceMorphMap()`
 - [x] `BelongsToUser` trait: global scope (returns no rows when no one is logged in), auto-fills `user_id`
 - [x] Reusable Pest isolation helper (user B can't list, view, edit, delete or link to A's records)
 - [x] `Money` value object + `MoneyCast` + `money()` / `@money` helpers, with unit tests (parsing never uses floats)
-- [ ] User settings page: timezone, currency, safety buffer, payments-due window
+- [x] User settings page (Settings → Preferences): timezone, currency, safety buffer, payments-due window
 
 ## Phase 2 — Tasks + Today view
 
@@ -115,3 +115,7 @@ Tick items when they are finished **and tested**. Every phase that adds user-own
 - [ ] Audit (stop gate): cross-user access on every model, route and Livewire action; mass assignment; validation; XSS; CSRF; rate limits on auth and AI; secrets; SSRF in the link fetcher
 - [ ] Findings fixed after approval
 - [ ] Every user-owned model confirmed to have `BelongsToUser`, a Policy and an isolation test
+
+## Later (after MVP)
+
+- [ ] Currency conversion when a user changes currency (exchange rate + convert every money column). Today changing currency only swaps the symbol (D-035).

@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Enums\Currency;
 use InvalidArgumentException;
 use JsonSerializable;
 
@@ -13,8 +14,8 @@ use JsonSerializable;
  */
 final readonly class Money implements JsonSerializable
 {
-    /** Pesos digits accepted by parse(), so centavos always fit in an int. */
-    private const MAX_PESO_DIGITS = 15;
+    /** Whole-unit digits accepted by parse(), so centavos always fit in an int. */
+    private const MAX_UNIT_DIGITS = 15;
 
     private function __construct(private int $cents) {}
 
@@ -29,32 +30,32 @@ final readonly class Money implements JsonSerializable
     }
 
     /**
-     * Parse user input such as "1,234.5", "₱ 1,000" or "-500" using integer maths only.
+     * Parse user input such as "1,234.5", "₱ 1,000", "$20" or "-500" using integer maths only.
      *
      * @throws InvalidArgumentException
      */
     public static function parse(string $input): self
     {
-        // Spaces are allowed only around the amount and after ₱, so a typo like "12 34" is rejected.
-        $clean = str_replace(',', '', trim(str_replace('₱', '', trim($input))));
+        // Spaces are allowed only around the amount and after the symbol, so a typo like "12 34" is rejected.
+        $clean = str_replace(',', '', trim(str_replace(self::symbols(), '', trim($input))));
 
         if (preg_match('/^(-?)(\d*)(?:\.(\d{0,2}))?$/', $clean, $matches) !== 1) {
             throw new InvalidArgumentException("Not a valid amount: \"{$input}\".");
         }
 
         $sign = $matches[1];
-        $pesos = ltrim($matches[2], '0');
-        $centavos = $matches[3] ?? '';
+        $units = ltrim($matches[2], '0');
+        $hundredths = $matches[3] ?? '';
 
-        if ($matches[2] === '' && $centavos === '') {
+        if ($matches[2] === '' && $hundredths === '') {
             throw new InvalidArgumentException("Not a valid amount: \"{$input}\".");
         }
 
-        if (strlen($pesos) > self::MAX_PESO_DIGITS) {
+        if (strlen($units) > self::MAX_UNIT_DIGITS) {
             throw new InvalidArgumentException("Amount is too large: \"{$input}\".");
         }
 
-        $cents = (int) $pesos * 100 + (int) str_pad($centavos, 2, '0');
+        $cents = (int) $units * 100 + (int) str_pad($hundredths, 2, '0');
 
         return new self($sign === '-' ? -$cents : $cents);
     }
@@ -95,15 +96,46 @@ final readonly class Money implements JsonSerializable
     }
 
     /**
-     * "₱1,234.50", or "−₱500.00" (U+2212 minus sign) when negative.
+     * "₱1,234.50" (or "$1,234.50"…), and "−₱500.00" (U+2212 minus sign) when negative.
      */
-    public function format(): string
+    public function format(Currency $currency = Currency::PHP): string
     {
-        $abs = abs($this->cents);
-        $pesos = (string) intdiv($abs, 100);
-        $grouped = strrev(implode(',', str_split(strrev($pesos), 3)));
-        $formatted = '₱'.$grouped.'.'.str_pad((string) ($abs % 100), 2, '0', STR_PAD_LEFT);
+        $grouped = strrev(implode(',', str_split(strrev($this->units()), 3)));
+        $formatted = $currency->symbol().$grouped.'.'.$this->hundredths();
 
         return $this->isNegative() ? "\u{2212}".$formatted : $formatted;
+    }
+
+    /**
+     * Plain amount for a form field, with no symbol or commas: "1234.50".
+     */
+    public function toDecimalString(): string
+    {
+        return ($this->isNegative() ? '-' : '').$this->units().'.'.$this->hundredths();
+    }
+
+    /** Whole units (pesos, dollars…) of the absolute amount, as digits. */
+    private function units(): string
+    {
+        return (string) intdiv(abs($this->cents), 100);
+    }
+
+    /** The two-digit hundredths of the absolute amount: "05", "50". */
+    private function hundredths(): string
+    {
+        return str_pad((string) (abs($this->cents) % 100), 2, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Every currency symbol, longest first so "HK$" is removed before "$".
+     *
+     * @return list<string>
+     */
+    private static function symbols(): array
+    {
+        $symbols = array_map(fn (Currency $currency): string => $currency->symbol(), Currency::cases());
+        usort($symbols, fn (string $a, string $b): int => strlen($b) <=> strlen($a));
+
+        return $symbols;
     }
 }

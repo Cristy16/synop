@@ -228,3 +228,9 @@ Newest entries go at the bottom. Each entry gives the date, the decision, the re
   - The rest of Phase 1 (3 user columns + settings page) is a separate step before Phase 2.
 - **Reason:** Catch our own coding mistakes early (ownership, silent data loss, typos in amounts) and keep CI green on the first push.
 - **Rejected:** Formatted text in JSON (needs parsing back); spaces as thousands separators; SQLite-only CI.
+
+### D-035 · Per-user currency is a display symbol; Preferences tab
+- **Date:** 2026-11-18 · **Source:** Owner choices while finishing Phase 1
+- **Decision:** Users pick one currency from PHP, USD, EUR, GBP, SGD, AUD, CAD, HKD (`App\Enums\Currency`). It only changes the symbol `money()` / `@money` show; stored amounts are never converted (₱500 → $500), and the page says so. Only 2-decimal currencies, because `Money` stores hundredths. Timezone, currency, safety buffer and payments-due window (1–30 days) live on a new Settings → Preferences tab, saved by the `UpdatePreferences` Action. `User::$attributes` repeats the column defaults so new User objects have them before being reloaded.
+- **Reason:** Real choice for users abroad without the risks of conversion (exchange rates, rounding, rewriting history). A separate tab keeps the starter kit's Profile page untouched (D-032).
+- **Rejected:** PHP locked; conversion now (moved to the roadmap's Later list); every ISO currency; adding fields to the Profile page.
