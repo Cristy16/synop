@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Task;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -33,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
         // Polymorphic *_type columns store these aliases, never class names (CLAUDE.md rule 14).
         // Every model used in a polymorphic relation must be listed here.
         Relation::enforceMorphMap([
+            'task' => Task::class,
             'user' => User::class,
         ]);
     }

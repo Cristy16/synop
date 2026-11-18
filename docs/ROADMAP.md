@@ -31,12 +31,12 @@ Tick items when they are finished **and tested**. Every phase that adds user-own
 
 ## Phase 2 — Tasks + Today view
 
-- [ ] `tasks` migration, model, factory, Policy (polymorphic `source`, unique per source)
-- [ ] Actions: create, update, complete, reopen, delete
+- [x] `tasks` migration, model, factory, Policy (polymorphic `source`, unique per source)
+- [x] Actions: create, update, complete, reopen, delete
 - [ ] Tasks page: quick-add, filters (today / upcoming / overdue / done), edit, complete checkbox
 - [ ] Today page as the home screen after login
 - [ ] Today sections as separate Livewire components: Tasks (live), Personal Care, Vitamins, Classes, Payments Due (empty states)
-- [ ] Isolation tests for tasks
+- [x] Isolation tests for tasks
 
 ## Phase 3 — Finance
 

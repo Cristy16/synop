@@ -1,11 +1,13 @@
 <?php
 
+use App\Models\Task;
 use App\Models\User;
 use Illuminate\Database\ClassMorphViolationException;
 use Tests\Support\OwnedThing;
 
 test('polymorphic types are stored as aliases, not class names', function () {
-    expect((new User)->getMorphClass())->toBe('user');
+    expect((new User)->getMorphClass())->toBe('user')
+        ->and((new Task)->getMorphClass())->toBe('task');
 });
 
 test('a model missing from the morph map cannot be used polymorphically', function () {
