@@ -44,10 +44,10 @@ Tick items when they are finished **and tested**. Every phase that adds user-own
 - [x] `transaction_categories` + default set created on registration
 - [x] `transactions` with types `income`, `expense`, `transfer`, `debt_in`, `debt_out` and the type rules from DATABASE §3.2
 - [x] Account balance and total balance (transfers don't change the total), with tests
-- [ ] `contacts`
-- [ ] One-off `debts` in both directions; principal creates a `debt_in`/`debt_out` transaction when an account is set
-- [ ] `debt_payments`: each creates one transaction; overpayment rejected; settles at remaining = 0
-- [ ] A debt with a due date creates a linked task; settling the debt completes it; its task can't be deleted directly
+- [x] `contacts`
+- [x] One-off `debts` in both directions; principal creates a `debt_in`/`debt_out` transaction when an account is set
+- [x] `debt_payments`: each creates one transaction; overpayment rejected; settles at remaining = 0
+- [x] A debt with a due date creates a linked task; settling the debt completes it; its task can't be deleted directly
 - [ ] Finance UI: overview (balance, owed to me, I owe, net), accounts, transactions with filters, debts grouped by contact
 - [ ] Today "Payments Due": due within `payments_due_days` plus overdue
 - [ ] Isolation tests for every Finance model
