@@ -24,9 +24,9 @@ Tick items when they are finished **and tested**. Every phase that adds user-own
 **Multi-user base**
 - [ ] `users` columns: `timezone` (Asia/Manila), `currency` (PHP), `safety_buffer_cents`, `payments_due_days` (7), `morning_summary_time`
 - [ ] Morph map registered with `Relation::enforceMorphMap()`
-- [ ] `BelongsToUser` trait: global scope (returns no rows when no one is logged in), auto-fills `user_id`
-- [ ] Reusable Pest isolation helper (user B can't list, view, edit, delete or link to A's records)
-- [ ] `Money` value object + `MoneyCast` + `money()` / `@money` helpers, with unit tests (parsing never uses floats)
+- [x] `BelongsToUser` trait: global scope (returns no rows when no one is logged in), auto-fills `user_id`
+- [x] Reusable Pest isolation helper (user B can't list, view, edit, delete or link to A's records)
+- [x] `Money` value object + `MoneyCast` + `money()` / `@money` helpers, with unit tests (parsing never uses floats)
 - [ ] User settings page: timezone, currency, safety buffer, payments-due window
 
 ## Phase 2 — Tasks + Today view

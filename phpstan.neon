@@ -9,5 +9,7 @@ parameters:
         - config/
         - database/
         - routes/
+        # Uses BelongsToUser, so the trait is analysed before any app model uses it.
+        - tests/Support/OwnedThing.php
 
     level: 7

@@ -209,3 +209,9 @@ Newest entries go at the bottom. Each entry gives the date, the decision, the re
 - **Decision:** Columns added to starter-kit tables (first: `users.timezone`, `users.currency`) go in new migrations; the starter kit's own migrations are never edited. `config/app.php` reads `APP_TIMEZONE` (default `UTC`). Formatting uses the kit's `composer lint` script and its `pint.json` (`laravel` preset) instead of a custom setup.
 - **Reason:** Starter-kit files stay comparable with upstream, and each schema change is a separate, reversible step.
 - **Rejected:** Editing `create_users_table`; a separate `composer format` script that duplicates `composer lint`.
+
+### D-033 · BelongsToUser and Money details
+- **Date:** 2026-11-18 · **Source:** BUILD-PROMPTS Phase 1 (BelongsToUser, Money cast, isolation helper)
+- **Decision:** Creating a user-owned record with no one logged in and no `user_id` throws a `LogicException`. Jobs either set `user_id` themselves or read through `Model::forUser($user)`, the only opt-out of the owner scope. `MoneyCast` accepts only `Money`, integers or null and rejects strings and floats, so input must go through `Money::parse()`. The trait is tested with a test-only `Tests\Support\OwnedThing` model and table until real models exist; `tests/Support/OwnedThing.php` is in PHPStan's paths so the trait is analysed. `composer types:check` runs PHPStan with `--memory-limit=1G` (it ran out of memory at PHP's default 128M).
+- **Reason:** Fail loudly instead of saving an orphan row; one obvious, searchable way to bypass the scope; floats can't slip into money columns.
+- **Rejected:** Silently skipping the scope in console; a `withoutOwnerScope()` with no user filter; a real migration just for tests.
