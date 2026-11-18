@@ -10,6 +10,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::redirect('dashboard', 'today')->name('dashboard');
 
     Route::livewire('tasks', 'pages::tasks.index')->name('tasks.index');
+
+    // Finance: one sidebar link, four tabs (D-041).
+    Route::livewire('finance', 'pages::finance.overview')->name('finance.overview');
+    Route::livewire('finance/accounts', 'pages::finance.accounts')->name('finance.accounts');
+    Route::livewire('finance/transactions', 'pages::finance.transactions')->name('finance.transactions');
+    Route::livewire('finance/debts', 'pages::finance.debts')->name('finance.debts');
 });
 
 require __DIR__.'/settings.php';

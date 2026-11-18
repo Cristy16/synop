@@ -23,7 +23,18 @@ class TaskPolicy
      */
     public function complete(User $user, Task $task): Response
     {
-        return $this->owns($user, $task);
+        $owns = $this->owns($user, $task);
+
+        if ($owns->denied()) {
+            return $owns;
+        }
+
+        // A debt's task follows the debt: it completes when the debt is paid off (D-041).
+        if ($task->source_type === 'debt') {
+            return Response::deny(__('Record a payment instead. This task completes when the debt is paid off.'));
+        }
+
+        return Response::allow();
     }
 
     public function delete(User $user, Task $task): Response

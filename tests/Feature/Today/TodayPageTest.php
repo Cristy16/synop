@@ -33,7 +33,7 @@ test('Today shows the date in the user\'s timezone and all five sections', funct
         ->assertSee('Your AM and PM routine will show here.')
         ->assertSee('Today&#039;s vitamin doses will show here.', false)
         ->assertSee('Today&#039;s classes will show here.', false)
-        ->assertSee('Debts due soon will show here.');
+        ->assertSee('Nothing due in the next 7 days.');
 });
 
 test('Today is the first link in the sidebar', function () {

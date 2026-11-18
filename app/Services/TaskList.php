@@ -37,6 +37,7 @@ class TaskList
     /**
      * The Today page's task list: due today or earlier, and either still open
      * or completed today (they stay, crossed out, until tomorrow — D-038).
+     * Debt tasks are left out: Payments Due shows those.
      * Overdue first (oldest first), then today's by time.
      *
      * @return Collection<int, Task>
@@ -48,6 +49,8 @@ class TaskList
         $startOfToday = now($user->timezone)->startOfDay()->utc();
 
         return Task::forUser($user)
+            // Debt tasks show in Today's "Payments Due" section instead (D-041).
+            ->where(fn (Builder $q) => $q->whereNull('source_type')->orWhere('source_type', '!=', 'debt'))
             ->whereDate('due_on', '<=', $today)
             ->where(fn (Builder $q) => $q->whereNull('completed_at')->orWhere('completed_at', '>=', $startOfToday))
             ->orderBy('due_on')

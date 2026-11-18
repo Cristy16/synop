@@ -48,9 +48,9 @@ Tick items when they are finished **and tested**. Every phase that adds user-own
 - [x] One-off `debts` in both directions; principal creates a `debt_in`/`debt_out` transaction when an account is set
 - [x] `debt_payments`: each creates one transaction; overpayment rejected; settles at remaining = 0
 - [x] A debt with a due date creates a linked task; settling the debt completes it; its task can't be deleted directly
-- [ ] Finance UI: overview (balance, owed to me, I owe, net), accounts, transactions with filters, debts grouped by contact
-- [ ] Today "Payments Due": due within `payments_due_days` plus overdue
-- [ ] Isolation tests for every Finance model
+- [x] Finance UI: overview (balance, owed to me, I owe, net), accounts, transactions with filters, debts grouped by contact
+- [x] Today "Payments Due": due within `payments_due_days` plus overdue
+- [x] Isolation tests for every Finance model
 
 ## Phase 4 — Schedule Engine
 
@@ -121,3 +121,4 @@ Tick items when they are finished **and tested**. Every phase that adds user-own
 
 - [ ] Currency conversion when a user changes currency (exchange rate + convert every money column). Today changing currency only swaps the symbol (D-035).
 - [ ] History / weekly summary: tasks done per day this week (other modules join as they are built). Requested 2026-11-18 (D-038).
+- [ ] Restore screens for deleted transactions, debts, payments and contacts (the Restore Actions exist and are tested; D-041).

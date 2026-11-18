@@ -19,6 +19,10 @@
                     <flux:sidebar.item icon="check-circle" :href="route('tasks.index')" :current="request()->routeIs('tasks.*')" wire:navigate>
                         {{ __('Tasks') }}
                     </flux:sidebar.item>
+
+                    <flux:sidebar.item icon="banknotes" :href="route('finance.overview')" :current="request()->routeIs('finance.*')" wire:navigate>
+                        {{ __('Finance') }}
+                    </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 

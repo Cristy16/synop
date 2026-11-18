@@ -27,4 +27,7 @@ new #[Title('Today')] class extends Component {
         <livewire:today.classes />
         <livewire:today.payments-due />
     </div>
+
+    <livewire:finance.record-payment />
+
 </div>

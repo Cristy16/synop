@@ -95,6 +95,11 @@ class Debt extends Model
      */
     public function paid(): Money
     {
+        // Lists load the sum up front (DebtSummary::withPaid) instead of one query per debt.
+        if (array_key_exists('paid_cents', $this->attributes)) {
+            return Money::fromCents((int) $this->attributes['paid_cents']);
+        }
+
         // forUser instead of payments(): works the same whoever is logged in (or nobody).
         return Money::fromCents((int) DebtPayment::forUser($this->user_id)
             ->where('debt_id', $this->id)

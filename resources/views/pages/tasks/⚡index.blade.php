@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -95,9 +96,24 @@ new #[Title('Tasks')] class extends Component {
         // Another user's id isn't found: 404 (rule 11).
         $task = Task::findOrFail($id);
 
+        // A debt's task follows its debt: ticking opens "Record payment" (D-041).
+        if ($task->source_type === 'debt') {
+            if (! $task->isCompleted() && $task->source_id !== null) {
+                $this->dispatch('record-payment', debtId: $task->source_id);
+            }
+
+            return;
+        }
+
         $task->isCompleted()
             ? $reopenTask->handle(Auth::user(), $task)
             : $completeTask->handle(Auth::user(), $task);
+    }
+
+    #[On('debt-paid')]
+    public function refreshAfterPayment(): void
+    {
+        // Re-render: a paid-off debt's task is now completed.
     }
 
     public function edit(int $id): void
@@ -290,4 +306,6 @@ new #[Title('Tasks')] class extends Component {
             </div>
         </form>
     </flux:modal>
+
+    <livewire:finance.record-payment />
 </section>
