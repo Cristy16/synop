@@ -2,7 +2,7 @@
 // Static assets are cached; pages and data always come from the network. When a
 // page can't load (offline), the offline page is shown instead. No offline editing.
 
-const VERSION = 'synop-v1';
+const VERSION = 'synop-v2';
 const OFFLINE_URL = '/offline.html';
 const PRECACHE = [OFFLINE_URL, '/icons/icon-192.png', '/favicon.svg'];
 
@@ -47,4 +47,30 @@ self.addEventListener('fetch', (event) => {
     }
 
     // Everything else (Livewire requests, data): straight to the network, never cached.
+});
+
+// Morning summary push (D-053).
+self.addEventListener('push', (event) => {
+    let data = {};
+    try { data = event.data ? event.data.json() : {}; } catch (e) { data = { title: 'Synop', body: event.data?.text() }; }
+
+    event.waitUntil(self.registration.showNotification(data.title || 'Synop', {
+        body: data.body || '',
+        icon: data.icon || '/icons/icon-192.png',
+        badge: data.badge || '/icons/icon-192.png',
+        tag: data.tag,
+        data: data.data || { url: '/today' },
+    }));
+});
+
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    // Only open pages of this app.
+    const path = String(event.notification.data?.url || '/today');
+    const url = new URL(path.startsWith('/') ? path : '/today', self.location.origin).href;
+
+    event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
+        const open = windows.find((w) => w.url.startsWith(self.location.origin));
+        return open ? open.navigate(url).then((w) => (w || open).focus()) : self.clients.openWindow(url);
+    }));
 });

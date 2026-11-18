@@ -107,8 +107,8 @@ Tick items when they are finished **and tested**. Every phase that adds user-own
 - [x] Service worker: static asset cache + offline fallback page
 - [x] Install hint (Android prompt, iPhone Share → Add to Home Screen steps)
 - [x] Bottom navigation on phones (Today, Tasks and later modules), tap targets of at least 44px (ARCHITECTURE §8). The sidebar stays on larger screens.
-- [ ] Web push package, VAPID keys, `push_subscriptions`, subscribe/unsubscribe in settings
-- [ ] Scheduled morning summary at each user's `morning_summary_time` in their own timezone
+- [x] Web push package, VAPID keys, `push_subscriptions`, subscribe/unsubscribe in settings
+- [x] Scheduled morning summary at each user's `morning_summary_time` in their own timezone
 - [ ] Tested installing and receiving push on Android and iPhone (iOS 16.4+, installed app)
 
 ## Phase 9 — Security review
