@@ -12,6 +12,7 @@ test('parses user input into centavos', function (string $input, int $cents) {
     ['12', 1200],
     ['12.', 1200],
     ['₱ 1,000', 100000],
+    ['-₱500', -50000],
     ['  99.99 ', 9999],
     ['-500', -50000],
     ['-0.01', -1],
@@ -21,7 +22,7 @@ test('parses user input into centavos', function (string $input, int $cents) {
 
 test('rejects invalid input', function (string $input) {
     Money::parse($input);
-})->with(['', '.', '-', 'abc', '1.234', '1.2.3', '1e3', '12a', '1000000000000000'])
+})->with(['', '.', '-', 'abc', '1.234', '1.2.3', '1e3', '12a', '1000000000000000', '12 34', '1 000'])
     ->throws(InvalidArgumentException::class);
 
 test('add and subtract return new values', function () {
@@ -51,6 +52,10 @@ test('formats for display', function (int $cents, string $expected) {
     [-50000, "\u{2212}₱500.00"],
     [-1, "\u{2212}₱0.01"],
 ]);
+
+test('becomes its centavos integer in JSON', function () {
+    expect(json_encode(['amount_cents' => Money::fromCents(12345)]))->toBe('{"amount_cents":12345}');
+});
 
 test('money() helper formats Money, integers and null', function () {
     expect(money(Money::fromCents(123450)))->toBe('₱1,234.50')

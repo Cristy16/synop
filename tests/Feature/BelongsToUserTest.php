@@ -44,6 +44,41 @@ test('creating without a logged-in user requires an explicit user_id', function 
     expect(OwnedThing::forUser($user)->count())->toBe(1);
 });
 
+test('a logged-in user cannot create a record for another user', function () {
+    [$a, $b] = User::factory()->count(2)->create();
+    $this->actingAs($a);
+
+    $thing = new OwnedThing(['name' => 'For B']);
+    $thing->user_id = $b->id;
+
+    expect(fn () => $thing->save())->toThrow(LogicException::class);
+
+    Auth::logout();
+    expect(OwnedThing::forUser($b)->count())->toBe(0);
+});
+
+test('the owner of a record cannot be changed', function () {
+    [$a, $b] = User::factory()->count(2)->create();
+    $this->actingAs($a);
+    $thing = OwnedThing::create(['name' => 'Mine']);
+
+    $thing->user_id = $b->id;
+
+    expect(fn () => $thing->save())->toThrow(LogicException::class)
+        ->and(OwnedThing::findOrFail($thing->id)->user_id)->toBe($a->id);
+});
+
+test('the owner cannot be changed by a job either', function () {
+    [$a, $b] = User::factory()->count(2)->create();
+    $thing = new OwnedThing(['name' => 'Mine']);
+    $thing->user_id = $a->id;
+    $thing->save();
+
+    $thing->user_id = $b->id;
+
+    expect(fn () => $thing->save())->toThrow(LogicException::class);
+});
+
 test('forUser() returns only that user\'s rows when no one is logged in', function () {
     [$a, $b] = User::factory()->count(2)->create();
 
@@ -68,5 +103,6 @@ test('money columns round-trip through the database as Money', function () {
 
     expect($fresh->amount_cents)->toBeInstanceOf(Money::class)
         ->and($fresh->amount_cents->cents())->toBe(123450)
-        ->and($fresh->getRawOriginal('amount_cents'))->toBe(123450);
+        ->and($fresh->getRawOriginal('amount_cents'))->toBe(123450)
+        ->and($fresh->toJson())->toContain('"amount_cents":123450');
 });

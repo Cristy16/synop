@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +29,12 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
 
         Blade::directive('money', fn (string $expression): string => "<?php echo e(money({$expression})); ?>");
+
+        // Polymorphic *_type columns store these aliases, never class names (CLAUDE.md rule 14).
+        // Every model used in a polymorphic relation must be listed here.
+        Relation::enforceMorphMap([
+            'user' => User::class,
+        ]);
     }
 
     /**

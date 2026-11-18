@@ -3,13 +3,15 @@
 namespace App\Support;
 
 use InvalidArgumentException;
+use JsonSerializable;
 
 /**
  * An amount of money as whole centavos (ARCHITECTURE §6, D-025).
  *
  * Immutable: add() and subtract() return a new Money. Floats are never used.
+ * In JSON it becomes its centavos integer: {"amount_cents": 12345}.
  */
-final readonly class Money
+final readonly class Money implements JsonSerializable
 {
     /** Pesos digits accepted by parse(), so centavos always fit in an int. */
     private const MAX_PESO_DIGITS = 15;
@@ -33,7 +35,8 @@ final readonly class Money
      */
     public static function parse(string $input): self
     {
-        $clean = str_replace(['₱', ',', ' '], '', trim($input));
+        // Spaces are allowed only around the amount and after ₱, so a typo like "12 34" is rejected.
+        $clean = str_replace(',', '', trim(str_replace('₱', '', trim($input))));
 
         if (preg_match('/^(-?)(\d*)(?:\.(\d{0,2}))?$/', $clean, $matches) !== 1) {
             throw new InvalidArgumentException("Not a valid amount: \"{$input}\".");
@@ -57,6 +60,11 @@ final readonly class Money
     }
 
     public function cents(): int
+    {
+        return $this->cents;
+    }
+
+    public function jsonSerialize(): int
     {
         return $this->cents;
     }

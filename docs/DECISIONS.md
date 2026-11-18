@@ -215,3 +215,16 @@ Newest entries go at the bottom. Each entry gives the date, the decision, the re
 - **Decision:** Creating a user-owned record with no one logged in and no `user_id` throws a `LogicException`. Jobs either set `user_id` themselves or read through `Model::forUser($user)`, the only opt-out of the owner scope. `MoneyCast` accepts only `Money`, integers or null and rejects strings and floats, so input must go through `Money::parse()`. The trait is tested with a test-only `Tests\Support\OwnedThing` model and table until real models exist; `tests/Support/OwnedThing.php` is in PHPStan's paths so the trait is analysed. `composer types:check` runs PHPStan with `--memory-limit=1G` (it ran out of memory at PHP's default 128M).
 - **Reason:** Fail loudly instead of saving an orphan row; one obvious, searchable way to bypass the scope; floats can't slip into money columns.
 - **Rejected:** Silently skipping the scope in console; a `withoutOwnerScope()` with no user filter; a real migration just for tests.
+
+### D-034 · Review fixes before Phase 2
+- **Date:** 2026-11-18 · **Source:** Owner review of Phase 1 work
+- **Decision:**
+  - `BelongsToUser` also blocks creating a record for another user while logged in, and blocks changing `user_id` at any time. Tests create user B's data while acting as B.
+  - `Money` becomes its centavos integer in JSON (`{"amount_cents": 12345}`).
+  - `Money::parse` allows spaces only around the amount and after `₱`; `"12 34"` is rejected.
+  - Morph map is enforced from now on (`'user' => User::class`); every polymorphic model is added to it.
+  - CI starts a MySQL service, so migrations are checked on MySQL; tests still run on SQLite.
+  - `.gitignore` no longer ignores `CLAUDE.md` or `.claude/` (only `.claude/settings.local.json`), so project subagents are committed.
+  - The rest of Phase 1 (3 user columns + settings page) is a separate step before Phase 2.
+- **Reason:** Catch our own coding mistakes early (ownership, silent data loss, typos in amounts) and keep CI green on the first push.
+- **Rejected:** Formatted text in JSON (needs parsing back); spaces as thousands separators; SQLite-only CI.
