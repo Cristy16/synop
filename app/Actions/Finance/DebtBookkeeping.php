@@ -2,25 +2,108 @@
 
 namespace App\Actions\Finance;
 
+use App\Actions\Schedules\CreateSchedule;
+use App\Actions\Schedules\RemoveSchedules;
+use App\Actions\Schedules\UpdateSchedule;
 use App\Enums\DebtDirection;
 use App\Enums\DebtStatus;
+use App\Enums\Frequency;
 use App\Models\Contact;
 use App\Models\Debt;
 use App\Models\DebtPayment;
+use App\Models\ScheduleRule;
 use App\Models\Task;
 use App\Models\Transaction;
+use App\Services\InstallmentPlan;
+use App\Support\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Keeps everything that hangs off a debt in step with it: the principal
- * transaction, its status, its linked task, and hiding/restoring them together.
+ * transaction, its status, its installment schedule, its linked task, and
+ * hiding/restoring them together.
  *
  * Internal helper for the debt Actions. Callers wrap it in DB::transaction()
- * (rule 12). It is the only code that touches a debt's task (D-012, D-040).
+ * (rule 12). It is the only code that touches a debt's task or schedule
+ * (D-012, D-040, D-044). Schedules still change only through the schedule Actions.
  */
 class DebtBookkeeping
 {
+    public function __construct(
+        private InstallmentPlan $plans,
+        private CreateSchedule $createSchedule,
+        private UpdateSchedule $updateSchedule,
+        private RemoveSchedules $removeSchedules,
+    ) {}
+
+    /**
+     * Make the debt's schedule match its plan. Call after saving the debt.
+     *
+     * - One payment: any installment schedule is removed (the history is in the payments).
+     * - Installments, no schedule yet (or only ended ones): a new one from the first due date.
+     * - Installments, first due date not reached yet: the schedule is edited in place.
+     * - Installments already running: same pattern -> only the end date moves; a new
+     *   pattern -> the old version ends yesterday and a new one starts today (D-013).
+     *   The end date always makes the total number of payment dates right.
+     *
+     * @param  array{installment: Money, pattern: array{frequency: Frequency, interval: int|null, weekdays: list<int>|null, day_of_month: int|null}, first_due_on: string, count: int, last: string}|null  $plan
+     */
+    public function syncPlan(Debt $debt, ?array $plan): void
+    {
+        $user = $debt->user;
+        $rules = $this->plans->rulesOf($debt);
+
+        if ($plan === null) {
+            if ($rules->isNotEmpty()) {
+                $this->removeSchedules->handle($user, $debt);
+            }
+
+            return;
+        }
+
+        $today = now($user->timezone)->toDateString();
+        $yesterday = now($user->timezone)->subDay()->toDateString();
+        $current = $rules->last();
+
+        if ($current === null || ($current->ends_on !== null && $current->ends_on->toDateString() < $today)) {
+            if ($rules->isNotEmpty()) {
+                $this->removeSchedules->handle($user, $debt);
+            }
+
+            $this->createSchedule->handle($user, $debt, [...$this->patternInput($plan['pattern']), 'starts_on' => $plan['first_due_on'], 'ends_on' => $plan['last']]);
+
+            return;
+        }
+
+        if ($current->starts_on->toDateString() >= $today) {
+            $this->updateSchedule->handle($user, $current, [...$this->patternInput($plan['pattern']), 'starts_on' => $plan['first_due_on'], 'ends_on' => $plan['last']]);
+
+            return;
+        }
+
+        /** @var Collection<int, ScheduleRule> $earlier */
+        $earlier = $rules->slice(0, -1)->values();
+
+        if ($this->samePattern($current, $plan['pattern'])) {
+            $end = $this->plans->endFor($earlier, $plan['pattern'], $current->starts_on->toDateString(), $plan['count']);
+
+            // An end before yesterday would rewrite the past; the extra dates are never used anyway.
+            if ($end !== null && $end >= $yesterday) {
+                $this->updateSchedule->handle($user, $current, [...$this->patternInput($plan['pattern']), 'ends_on' => $end]);
+            }
+
+            return;
+        }
+
+        // A new pattern from today: count the dates the current version had up to yesterday.
+        $endedCurrent = (clone $current)->forceFill(['ends_on' => $yesterday]);
+        $end = $this->plans->endFor($earlier->push($endedCurrent), $plan['pattern'], $today, $plan['count']);
+
+        $this->updateSchedule->handle($user, $current, [...$this->patternInput($plan['pattern']), 'ends_on' => $end]);
+    }
+
     /**
      * Create, move or remove the principal transaction to match the debt.
      * With no account (a debt from before using the app) there is none.
@@ -98,10 +181,19 @@ class DebtBookkeeping
             ->where('source_id', $debt->id)
             ->first();
 
-        if ($debt->trashed() || $debt->due_on === null) {
-            $task?->delete();
+        // One-off debts use their due date; installment debts their next due date (D-044).
+        $next = $debt->installment_cents === null ? null : $this->plans->nextDue($debt);
+        $dueOn = $debt->installment_cents === null ? $debt->due_on?->toDateString() : $next?->date;
 
-            return;
+        if ($debt->trashed() || $dueOn === null) {
+            // A settled installment debt has no next date but keeps its completed task.
+            if ($debt->trashed() || $debt->installment_cents === null || ! $debt->isSettled() || $task === null) {
+                $task?->delete();
+
+                return;
+            }
+
+            $dueOn = $task->due_on?->toDateString();
         }
 
         if ($task === null) {
@@ -112,10 +204,10 @@ class DebtBookkeeping
         }
 
         if (! $debt->isSettled() || ! $task->exists) {
-            $task->title = $this->taskTitle($debt);
+            $task->title = $this->taskTitle($debt, $next?->amount);
         }
 
-        $task->setAttribute('due_on', $debt->due_on->toDateString());
+        $task->setAttribute('due_on', $dueOn);
         $task->completed_at = $debt->isSettled() ? ($task->completed_at ?? $debt->settled_at ?? now()) : null;
         $task->save();
     }
@@ -158,10 +250,13 @@ class DebtBookkeeping
         $this->refresh($debt);
     }
 
-    private function taskTitle(Debt $debt): string
+    /**
+     * @param  Money|null  $due  for installment debts: the amount due on the next date
+     */
+    private function taskTitle(Debt $debt, ?Money $due = null): string
     {
-        // What's left to pay; for a settled debt (e.g. restored), the original amount.
-        $amount = ($debt->isSettled() ? $debt->principal_cents : $debt->remaining())->format($debt->user->currency);
+        // What's due next (installments) or left to pay; for a settled debt, the original amount.
+        $amount = ($debt->isSettled() ? $debt->principal_cents : ($due ?? $debt->remaining()))->format($debt->user->currency);
         $name = Contact::forUser($debt->user_id)->withTrashed()->findOrFail($debt->contact_id)->name;
 
         return $debt->direction === DebtDirection::OwedToMe
@@ -182,5 +277,32 @@ class DebtBookkeeping
             ->whereIn('source_id', (array) $ids);
 
         return $onlyTrashed ? $query->onlyTrashed() : $query;
+    }
+
+    /**
+     * @param  array{frequency: Frequency, interval: int|null, weekdays: list<int>|null, day_of_month: int|null}  $pattern
+     * @return array<string, mixed>
+     */
+    private function patternInput(array $pattern): array
+    {
+        return [
+            'frequency' => $pattern['frequency']->value,
+            'interval' => $pattern['interval'],
+            'weekdays' => $pattern['weekdays'],
+            'day_of_month' => $pattern['day_of_month'],
+        ];
+    }
+
+    /**
+     * @param  array{frequency: Frequency, interval: int|null, weekdays: list<int>|null, day_of_month: int|null}  $pattern
+     */
+    private function samePattern(ScheduleRule $rule, array $pattern): bool
+    {
+        $weekdays = $rule->weekdays === null ? null : array_map('intval', $rule->weekdays);
+
+        return $rule->frequency === $pattern['frequency']
+            && $rule->interval === $pattern['interval']
+            && $weekdays === $pattern['weekdays']
+            && $rule->day_of_month === $pattern['day_of_month'];
     }
 }

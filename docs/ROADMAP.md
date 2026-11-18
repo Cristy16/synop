@@ -60,7 +60,7 @@ Tick items when they are finished **and tested**. Every phase that adds user-own
 - [x] `UpdateSchedule` Action: versioned rules (old rule ends yesterday, new one starts today)
 - [x] Recurring tasks
 - [x] Today view uses the engine; mark done / skip / un-tick writes `schedule_logs`
-- [ ] Installment debts: rule + `installment_cents`, next due date, the linked task's due date moves forward
+- [x] Installment debts: rule + `installment_cents`, next due date, the linked task's due date moves forward
 - [x] Isolation tests for rules and logs
 
 ## Phase 5 — Personal Care

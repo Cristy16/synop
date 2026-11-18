@@ -15,7 +15,7 @@ class UpdateDebt
 {
     use ParsesMoney;
 
-    public function __construct(private DebtBookkeeping $books) {}
+    public function __construct(private DebtBookkeeping $books, private DebtPlanInput $planInput) {}
 
     /**
      * Edit a debt. Its principal transaction, status and task follow.
@@ -34,8 +34,9 @@ class UpdateDebt
         $validated = Validator::make($input, DebtInput::rules($user))->validate();
         $principal = $this->parseMoney($validated['principal'], 'principal', 'positive');
         $direction = DebtDirection::from($validated['direction']);
+        $plan = $this->planInput->validate($input, $principal, $validated['started_on']);
 
-        return DB::transaction(function () use ($user, $debt, $validated, $principal, $direction) {
+        return DB::transaction(function () use ($user, $debt, $validated, $principal, $direction, $plan) {
             // Lock the row so a payment can't land between the check and the save.
             $debt = Debt::forUser($user)->lockForUpdate()->findOrFail($debt->id);
             $paid = $debt->paid();
@@ -60,10 +61,12 @@ class UpdateDebt
             $debt->description = $validated['description'] ?? null;
             $debt->account_id = isset($validated['account_id']) ? (int) $validated['account_id'] : null;
             $debt->setAttribute('started_on', $validated['started_on']);
-            $debt->setAttribute('due_on', $validated['due_on'] ?? null);
+            $debt->setAttribute('due_on', $plan === null ? ($validated['due_on'] ?? null) : null);
+            $debt->installment_cents = $plan['installment'] ?? null;
             $debt->save();
 
             $this->books->syncPrincipal($debt);
+            $this->books->syncPlan($debt, $plan);
             $this->books->refresh($debt); // also syncs the task
 
             return $debt;

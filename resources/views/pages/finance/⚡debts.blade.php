@@ -4,16 +4,20 @@ use App\Actions\Finance\CreateContact;
 use App\Actions\Finance\CreateDebt;
 use App\Actions\Finance\DeleteContact;
 use App\Actions\Finance\DeleteDebt;
+use App\Actions\Finance\DebtPlanInput;
 use App\Actions\Finance\DeleteDebtPayment;
 use App\Actions\Finance\UpdateContact;
 use App\Actions\Finance\UpdateDebt;
 use App\Enums\DebtDirection;
 use App\Enums\DebtStatus;
+use App\Enums\Frequency;
 use App\Models\Account;
 use App\Models\Contact;
 use App\Models\Debt;
 use App\Models\DebtPayment;
 use App\Services\DebtSummary;
+use App\Services\InstallmentPlan;
+use App\Support\Money;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -48,6 +52,16 @@ new #[Title('Debts')] class extends Component {
     public string $account_id = '';
     public string $started_on = '';
     public string $due_on = '';
+
+    // How it's paid back (D-044): one payment, or installments.
+    public string $plan = 'one_off';
+    public string $installment = '';
+    public string $plan_frequency = 'monthly';
+    public string $plan_interval = '2';
+    /** @var list<string> */
+    public array $plan_weekdays = [];
+    public string $plan_day = '';
+    public string $first_due_on = '';
 
     // Delete-contact window.
     #[Locked]
@@ -90,6 +104,27 @@ new #[Title('Debts')] class extends Component {
         return $this->showPaymentsFor === null
             ? new Collection
             : DebtPayment::with('account')->where('debt_id', $this->showPaymentsFor)->latest('paid_on')->latest('id')->get();
+    }
+
+    /**
+     * "→ 6 payments, last on May 15", worked out live while the form is filled in.
+     *
+     * @return array{count: int, last: string}|null
+     */
+    #[Computed]
+    public function planPreview(): ?array
+    {
+        if ($this->plan !== DebtPlanInput::INSTALLMENTS) {
+            return null;
+        }
+
+        try {
+            $plan = app(DebtPlanInput::class)->validate($this->planInput(), Money::parse($this->principal), $this->started_on ?: '0000-01-01');
+        } catch (ValidationException|\InvalidArgumentException) {
+            return null;
+        }
+
+        return $plan === null ? null : ['count' => $plan['count'], 'last' => $plan['last']];
     }
 
     #[Computed]
@@ -196,6 +231,22 @@ new #[Title('Debts')] class extends Component {
         $this->started_on = $debt->started_on->toDateString();
         $this->due_on = $debt->due_on?->toDateString() ?? '';
 
+        if ($debt->installment_cents !== null) {
+            $rules = app(InstallmentPlan::class)->rulesOf($debt);
+            $current = $rules->last();
+
+            $this->plan = DebtPlanInput::INSTALLMENTS;
+            $this->installment = $debt->installment_cents->toDecimalString();
+            $this->first_due_on = $rules->first()?->starts_on->toDateString() ?? '';
+
+            if ($current !== null) {
+                $this->plan_frequency = $current->frequency->value;
+                $this->plan_interval = (string) ($current->interval ?? 2);
+                $this->plan_weekdays = array_map('strval', $current->weekdays ?? []);
+                $this->plan_day = (string) ($current->day_of_month ?? '');
+            }
+        }
+
         Flux::modal('debt-form')->show();
     }
 
@@ -211,12 +262,15 @@ new #[Title('Debts')] class extends Component {
             'description' => $this->description === '' ? null : $this->description,
             'account_id' => $this->account_id === '' ? null : $this->account_id,
             'started_on' => $this->started_on,
-            'due_on' => $this->due_on === '' ? null : $this->due_on,
+            'due_on' => $this->plan === DebtPlanInput::INSTALLMENTS || $this->due_on === '' ? null : $this->due_on,
+            ...$this->planInput(),
         ];
 
-        $this->editingDebtId === null
+        $names = ['frequency' => 'plan_frequency', 'interval' => 'plan_interval', 'weekdays' => 'plan_weekdays', 'day_of_month' => 'plan_day'];
+
+        $this->withFieldNames($names, fn () => $this->editingDebtId === null
             ? $createDebt->handle(Auth::user(), $input)
-            : $updateDebt->handle(Auth::user(), Debt::findOrFail($this->editingDebtId), $input);
+            : $updateDebt->handle(Auth::user(), Debt::findOrFail($this->editingDebtId), $input));
 
         Flux::modal('debt-form')->close();
         Flux::toast(variant: 'success', text: __('Debt saved.'));
@@ -259,7 +313,8 @@ new #[Title('Debts')] class extends Component {
             $action();
         } catch (ValidationException $e) {
             throw ValidationException::withMessages(
-                collect($e->errors())->mapWithKeys(fn (array $messages, string $key) => [$names[$key] ?? $key => $messages])->all()
+                // "weekdays.0" belongs to the "weekdays" field too.
+                collect($e->errors())->mapWithKeys(fn (array $messages, string $key) => [$names[explode('.', $key)[0]] ?? $key => $messages])->all()
             );
         }
     }
@@ -273,7 +328,32 @@ new #[Title('Debts')] class extends Component {
     private function resetDebtForm(): void
     {
         $this->resetValidation();
-        $this->reset('editingDebtId', 'contact_id', 'direction', 'principal', 'description', 'account_id', 'started_on', 'due_on');
+        $this->reset('editingDebtId', 'contact_id', 'direction', 'principal', 'description', 'account_id', 'started_on', 'due_on',
+            'plan', 'installment', 'plan_frequency', 'plan_interval', 'plan_weekdays', 'plan_day', 'first_due_on');
+    }
+
+    /**
+     * The installment fields, named as the debt Actions expect them.
+     *
+     * @return array<string, mixed>
+     */
+    private function planInput(): array
+    {
+        if ($this->plan !== DebtPlanInput::INSTALLMENTS) {
+            return ['plan' => DebtPlanInput::ONE_OFF];
+        }
+
+        $frequency = Frequency::tryFrom($this->plan_frequency);
+
+        return [
+            'plan' => DebtPlanInput::INSTALLMENTS,
+            'installment' => $this->installment,
+            'frequency' => $this->plan_frequency,
+            'interval' => $frequency === Frequency::EveryNDays ? $this->plan_interval : null,
+            'weekdays' => $frequency === Frequency::Weekly ? array_map('intval', $this->plan_weekdays) : null,
+            'day_of_month' => $frequency === Frequency::Monthly ? $this->plan_day : null,
+            'first_due_on' => $this->first_due_on,
+        ];
     }
 }; ?>
 
@@ -334,6 +414,20 @@ new #[Title('Debts')] class extends Component {
                                     </span>
                                     <span class="mt-1 flex flex-wrap gap-x-2 text-xs text-zinc-500 dark:text-zinc-400">
                                         @if ($debt->description)<span class="break-words">{{ $debt->description }}</span>@endif
+                                        @if ($debt->installment_cents !== null && ! $settled)
+                                            @php
+                                                $planRules = app(InstallmentPlan::class)->rulesOf($debt);
+                                                $next = app(InstallmentPlan::class)->nextDue($debt, $planRules);
+                                            @endphp
+                                            <span data-test="plan-line">
+                                                ↻ {{ money($debt->installment_cents) }} · {{ $planRules->last()?->summary() }}
+                                                @if ($next)
+                                                    · <span @class(['font-medium text-red-600 dark:text-red-400' => $next->date < $today])>
+                                                        {{ __('next :date (:amount)', ['date' => \Carbon\CarbonImmutable::parse($next->date)->format('M j'), 'amount' => money($next->amount)]) }}
+                                                    </span>
+                                                @endif
+                                            </span>
+                                        @endif
                                         @if ($debt->due_on && ! $settled)
                                             <span @class(['font-medium text-red-600 dark:text-red-400' => $overdue])>
                                                 {{ $overdue ? __('Overdue · was due :date', ['date' => $debt->due_on->format('M j')]) : __('Due :date', ['date' => $debt->due_on->format('D, M j')]) }}
@@ -450,10 +544,48 @@ new #[Title('Debts')] class extends Component {
                     @endforeach
                 </flux:select>
 
-                <div class="grid grid-cols-2 gap-3">
-                    <flux:input wire:model="started_on" type="date" :label="__('Date')" required />
+                <flux:input wire:model.live.blur="started_on" type="date" :label="__('Date')" required />
+
+                <flux:radio.group wire:model.live="plan" :label="__('Paid back in')" variant="segmented">
+                    <flux:radio value="one_off" :label="__('One payment')" />
+                    <flux:radio value="installments" :label="__('Installments')" />
+                </flux:radio.group>
+
+                @if ($plan === 'installments')
+                    <div class="space-y-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" data-test="plan-section">
+                        <flux:input wire:model.live.blur="installment" :label="__('Each payment')" inputmode="decimal" placeholder="0.00" />
+
+                        <flux:select wire:model.live="plan_frequency" :label="__('How often')">
+                            <flux:select.option value="monthly">{{ __('Once a month') }}</flux:select.option>
+                            <flux:select.option value="weekly">{{ __('On certain weekdays') }}</flux:select.option>
+                            <flux:select.option value="every_n_days">{{ __('Every few days') }}</flux:select.option>
+                        </flux:select>
+
+                        @if ($plan_frequency === 'every_n_days')
+                            <flux:input wire:model.live.blur="plan_interval" type="number" min="2" max="365" :label="__('Every how many days?')" />
+                        @elseif ($plan_frequency === 'weekly')
+                            <flux:checkbox.group wire:model.live="plan_weekdays" :label="__('On')" class="flex flex-wrap gap-x-4 gap-y-2">
+                                @foreach ([1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat', 7 => 'Sun'] as $value => $name)
+                                    <flux:checkbox :value="(string) $value" :label="__($name)" />
+                                @endforeach
+                            </flux:checkbox.group>
+                        @else
+                            <flux:input wire:model.live.blur="plan_day" type="number" min="1" max="31" :label="__('Day of the month')"
+                                :description="__('29–31 fall on the last day of shorter months.')" />
+                        @endif
+
+                        <flux:input wire:model.live.blur="first_due_on" type="date" :label="__('First payment due')" />
+
+                        @if ($this->planPreview)
+                            <flux:text class="text-sm font-medium" data-test="plan-preview">
+                                → {{ trans_choice(':count payment|:count payments', $this->planPreview['count']) }},
+                                {{ __('last on :date', ['date' => \Carbon\CarbonImmutable::parse($this->planPreview['last'])->format('M j, Y')]) }}
+                            </flux:text>
+                        @endif
+                    </div>
+                @else
                     <flux:input wire:model="due_on" type="date" :label="__('Due')" :description="__('Optional')" />
-                </div>
+                @endif
             @endif
 
             <div class="flex flex-wrap items-center justify-between gap-3 pt-2">

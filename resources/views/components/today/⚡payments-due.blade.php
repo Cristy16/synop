@@ -1,8 +1,7 @@
 <?php
 
-use App\Models\Debt;
 use App\Services\DebtSummary;
-use Illuminate\Database\Eloquent\Collection;
+use App\Support\DueDebt;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
@@ -14,10 +13,10 @@ use Livewire\Component;
  */
 new class extends Component {
     /**
-     * @return Collection<int, Debt>
+     * @return list<DueDebt>
      */
     #[Computed]
-    public function debts(): Collection
+    public function debts(): array
     {
         return app(DebtSummary::class)->dueSoon(Auth::user());
     }
@@ -32,12 +31,12 @@ new class extends Component {
 <x-today.section
     :title="__('Payments Due')"
     icon="banknotes"
-    :summary="$this->debts->isNotEmpty() ? trans_choice(':count due|:count due', $this->debts->count()) : null"
+    :summary="count($this->debts) > 0 ? trans_choice(':count due|:count due', count($this->debts)) : null"
     :empty="__('Nothing due in the next :days days.', ['days' => auth()->user()->payments_due_days])"
     :link="route('finance.debts')"
     :link-label="__('See all debts')"
 >
-    @if ($this->debts->isNotEmpty())
-        @include('partials.finance.due-list', ['debts' => $this->debts, 'today' => now(auth()->user()->timezone)->toDateString()])
+    @if (count($this->debts) > 0)
+        @include('partials.finance.due-list', ['items' => $this->debts, 'today' => now(auth()->user()->timezone)->toDateString()])
     @endif
 </x-today.section>

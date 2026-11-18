@@ -4,6 +4,7 @@ use App\Actions\Finance\RecordDebtPayment;
 use App\Enums\DebtDirection;
 use App\Models\Account;
 use App\Models\Debt;
+use App\Services\InstallmentPlan;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -35,7 +36,9 @@ new class extends Component {
 
         $this->resetValidation();
         $this->debtId = $debt->id;
-        $this->amount = $debt->remaining()->toDecimalString();
+        // Installment debts: what's due now; otherwise everything left (D-044).
+        $next = app(InstallmentPlan::class)->nextDue($debt);
+        $this->amount = ($next?->amount ?? $debt->remaining())->toDecimalString();
         $this->paid_on = now(Auth::user()->timezone)->toDateString();
         $this->note = '';
 

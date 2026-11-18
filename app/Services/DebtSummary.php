@@ -6,7 +6,9 @@ use App\Enums\DebtDirection;
 use App\Enums\DebtStatus;
 use App\Models\Contact;
 use App\Models\Debt;
+use App\Models\ScheduleRule;
 use App\Models\User;
+use App\Support\DueDebt;
 use App\Support\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -17,6 +19,8 @@ use Illuminate\Database\Eloquent\Collection;
  */
 class DebtSummary
 {
+    public function __construct(private InstallmentPlan $plans) {}
+
     /**
      * What remains on open debts, each way.
      *
@@ -36,21 +40,46 @@ class DebtSummary
 
     /**
      * Open debts due within the user's window (`payments_due_days`) or overdue,
-     * soonest first (PRD §2.2 "Payments Due", D-009).
+     * soonest first (PRD §2.2 "Payments Due", D-009). One-off debts by their due
+     * date and the remaining amount; installment debts by their next due date and
+     * the amount due on it (D-044).
      *
-     * @return Collection<int, Debt>
+     * @return list<DueDebt>
      */
-    public function dueSoon(User $user): Collection
+    public function dueSoon(User $user): array
     {
         $until = now($user->timezone)->addDays($user->payments_due_days)->toDateString();
 
-        return $this->openDebts($user)
-            ->whereNotNull('due_on')
-            ->whereDate('due_on', '<=', $until)
+        $debts = $this->openDebts($user)
+            ->where(fn (Builder $q) => $q->whereNotNull('due_on')->orWhereNotNull('installment_cents'))
             ->with('contact')
-            ->orderBy('due_on')
-            ->orderBy('id')
             ->get();
+
+        // All installment schedules in one query, instead of one per debt.
+        $rules = ScheduleRule::forUser($user)
+            ->where('schedulable_type', 'debt')
+            ->whereIn('schedulable_id', $debts->whereNotNull('installment_cents')->modelKeys())
+            ->orderBy('starts_on')
+            ->get()
+            ->groupBy('schedulable_id');
+
+        $due = [];
+
+        foreach ($debts as $debt) {
+            if ($debt->installment_cents !== null) {
+                $next = $this->plans->nextDue($debt, $rules->get($debt->id, new Collection));
+
+                if ($next !== null && $next->date <= $until) {
+                    $due[] = new DueDebt($debt, $next->date, $next->amount, $next);
+                }
+            } elseif ($debt->due_on !== null && $debt->due_on->toDateString() <= $until) {
+                $due[] = new DueDebt($debt, $debt->due_on->toDateString(), $debt->remaining());
+            }
+        }
+
+        usort($due, fn (DueDebt $a, DueDebt $b) => [$a->date, $a->debt->id] <=> [$b->date, $b->debt->id]);
+
+        return $due;
     }
 
     /**

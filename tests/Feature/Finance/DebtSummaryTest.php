@@ -6,6 +6,7 @@ use App\Models\Account;
 use App\Models\Contact;
 use App\Models\User;
 use App\Services\DebtSummary;
+use App\Support\DueDebt;
 use Carbon\CarbonImmutable;
 
 beforeEach(function () {
@@ -57,7 +58,7 @@ test('due soon lists open debts due within the window or overdue, soonest first'
     $paid = ($this->debt)($this->ben, 'owed_to_me', '100', '2026-11-20');
     ($this->pay)($paid, '100');                                      // settled: out
 
-    expect($this->summary->dueSoon($this->user)->map(fn ($d) => $d->due_on->toDateString())->all())
+    expect(array_map(fn (DueDebt $d) => $d->date, $this->summary->dueSoon($this->user)))
         ->toBe(['2026-11-05', '2026-11-19', '2026-11-26']);
 });
 
@@ -68,14 +69,15 @@ test('the due-soon window follows the user\'s setting', function () {
     expect($this->summary->dueSoon($this->user))->toHaveCount(1);
 });
 
-test('due-soon items know what remains without extra queries', function () {
+test('a one-off debt is due for what remains', function () {
     $debt = ($this->debt)($this->ben, 'owed_to_me', '1,000', '2026-11-20');
     ($this->pay)($debt, '250');
 
-    $item = $this->summary->dueSoon($this->user)->sole();
+    [$item] = $this->summary->dueSoon($this->user);
 
-    expect($item->remaining()->cents())->toBe(75000)
-        ->and($item->getAttributes())->toHaveKey('paid_cents');
+    expect($item->amount->cents())->toBe(75000)
+        ->and($item->installment)->toBeNull()
+        ->and($item->debt->getAttributes())->toHaveKey('paid_cents');
 });
 
 test('by contact groups debts with each contact\'s net', function () {
@@ -115,6 +117,6 @@ test('another user\'s debts never appear', function () {
     $this->actingAs($this->user);
 
     expect($this->summary->totals($this->user)['owed_to_me']->isZero())->toBeTrue()
-        ->and($this->summary->dueSoon($this->user))->toHaveCount(0)
+        ->and($this->summary->dueSoon($this->user))->toBe([])
         ->and(collect($this->summary->byContact($this->user))->pluck('contact.name')->all())->toBe(['Ana', 'Ben']);
 });

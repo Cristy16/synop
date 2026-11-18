@@ -2,9 +2,9 @@
 
 use App\Enums\DebtDirection;
 use App\Models\Account;
-use App\Models\Debt;
 use App\Services\AccountBalances;
 use App\Services\DebtSummary;
+use App\Support\DueDebt;
 use App\Support\Money;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -52,10 +52,10 @@ new #[Title('Finance')] class extends Component {
     }
 
     /**
-     * @return Collection<int, Debt>
+     * @return list<DueDebt>
      */
     #[Computed]
-    public function dueSoon(): Collection
+    public function dueSoon(): array
     {
         return app(DebtSummary::class)->dueSoon(Auth::user());
     }
@@ -112,13 +112,13 @@ new #[Title('Finance')] class extends Component {
         <x-today.section
             :title="__('Due soon')"
             icon="calendar"
-            :summary="$this->dueSoon->isNotEmpty() ? trans_choice(':count due|:count due', $this->dueSoon->count()) : null"
+            :summary="count($this->dueSoon) > 0 ? trans_choice(':count due|:count due', count($this->dueSoon)) : null"
             :empty="__('No debts due in the next :days days.', ['days' => auth()->user()->payments_due_days])"
             :link="route('finance.debts')"
             :link-label="__('See all debts')"
         >
-            @if ($this->dueSoon->isNotEmpty())
-                @include('partials.finance.due-list', ['debts' => $this->dueSoon, 'today' => $today])
+            @if (count($this->dueSoon) > 0)
+                @include('partials.finance.due-list', ['items' => $this->dueSoon, 'today' => $today])
             @endif
         </x-today.section>
     </div>
