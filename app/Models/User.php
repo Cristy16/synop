@@ -28,6 +28,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Currency $currency
  * @property Money $safety_buffer_cents
  * @property int $payments_due_days
+ * @property list<int>|null $paydays
  * @property string|null $morning_summary_time
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
@@ -68,6 +69,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             'currency' => Currency::class,
             'safety_buffer_cents' => MoneyCast::class,
             'payments_due_days' => 'integer',
+            'paydays' => 'array',
         ];
     }
 

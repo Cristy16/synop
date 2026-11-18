@@ -18,6 +18,8 @@ use App\Models\Want;
 use App\Services\LinkPreview\DescriptionParser;
 use App\Services\LinkPreview\LinkPreview;
 use App\Services\LinkPreview\ShopName;
+use App\Services\SafeToSpend;
+use App\Support\SafeToSpendBreakdown;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -31,6 +33,10 @@ new #[Title('Wants')] class extends Component {
     /** The open tab, kept in the address bar. */
     #[Url]
     public string $status = 'wanted';
+
+    /** Safe-to-spend looks ahead to this date (empty = next payday, D-050). */
+    #[Url]
+    public string $until = '';
 
     // Add / edit window. The id is locked against tampering.
     #[Locked]
@@ -64,6 +70,14 @@ new #[Title('Wants')] class extends Component {
     public function currentStatus(): WantStatus
     {
         return WantStatus::tryFrom($this->status) ?? WantStatus::Wanted;
+    }
+
+    #[Computed]
+    public function safe(): SafeToSpendBreakdown
+    {
+        $until = $this->until !== '' && SafeToSpend::isValidDate($this->until) ? $this->until : null;
+
+        return app(SafeToSpend::class)->for(Auth::user(), $until);
     }
 
     /**
@@ -299,6 +313,39 @@ new #[Title('Wants')] class extends Component {
         <flux:button variant="primary" icon="plus" wire:click="create" data-test="add-want-button">{{ __('Add a want') }}</flux:button>
     </div>
 
+    {{-- Safe to spend (computed in PHP, never by the AI — D-027) --}}
+    @php $safe = $this->safe; @endphp
+    <section class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-700" data-test="safe-to-spend">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <flux:text class="text-sm">{{ __('Safe to spend until :date', ['date' => \Carbon\CarbonImmutable::parse($safe->until)->format('D, M j')]) }}</flux:text>
+                <div @class(['mt-1 text-2xl font-semibold tabular-nums', 'text-red-600 dark:text-red-400' => $safe->safe->isNegative()]) data-test="safe-amount">
+                    {{ money($safe->safe) }}
+                </div>
+            </div>
+            <div class="w-40">
+                <flux:input wire:model.live="until" type="date" :label="__('Until')" size="sm" :value="$safe->until" />
+            </div>
+        </div>
+        <details class="mt-3 text-sm">
+            <summary class="cursor-pointer text-zinc-500 dark:text-zinc-400">{{ __('How it\'s worked out') }}</summary>
+            <dl class="mt-2 space-y-1 tabular-nums">
+                <div class="flex justify-between"><dt>{{ __('All your accounts') }}</dt><dd>{{ money($safe->balance) }}</dd></div>
+                @foreach ($safe->owed as $line)
+                    <div class="flex justify-between text-zinc-600 dark:text-zinc-300">
+                        <dt>− {{ __('Owe :name, due :date', ['name' => $line['debt']->contact?->name, 'date' => \Carbon\CarbonImmutable::parse($line['due_on'])->format('M j')]) }}</dt>
+                        <dd>{{ money($line['amount']) }}</dd>
+                    </div>
+                @endforeach
+                <div class="flex justify-between text-zinc-600 dark:text-zinc-300"><dt>− {{ __('Safety buffer') }}</dt><dd>{{ money($safe->buffer) }}</dd></div>
+                <div class="flex justify-between border-t border-zinc-200 pt-1 font-medium dark:border-zinc-700"><dt>{{ __('Safe to spend') }}</dt><dd>{{ money($safe->safe) }}</dd></div>
+            </dl>
+            <flux:text class="mt-2 text-xs">
+                {{ __('Paydays and the safety buffer are in Settings → Preferences.') }}
+            </flux:text>
+        </details>
+    </section>
+
     <nav class="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1" aria-label="{{ __('Filter wants') }}">
         @foreach (WantStatus::cases() as $tab)
             <flux:button size="sm" :variant="$tab === $current ? 'primary' : 'ghost'" wire:click="$set('status', '{{ $tab->value }}')" class="shrink-0" data-test="tab-{{ $tab->value }}">
@@ -320,6 +367,13 @@ new #[Title('Wants')] class extends Component {
                     <span class="block break-words text-sm font-medium">{{ $want->title }}</span>
                     <span class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
                         @if ($want->price_cents)<span class="font-medium text-zinc-700 dark:text-zinc-200">{{ money($want->price_cents) }}</span>@endif
+                        @if ($want->price_cents && $want->status === WantStatus::Wanted)
+                            @if ($want->price_cents->cents() <= $safe->safe->cents())
+                                <flux:badge size="sm" color="green" data-test="fits">{{ __('Fits') }}</flux:badge>
+                            @else
+                                <flux:badge size="sm" color="amber" data-test="over">{{ __(':amount over', ['amount' => money(\App\Support\Money::fromCents($want->price_cents->cents() - max(0, $safe->safe->cents())))]) }}</flux:badge>
+                            @endif
+                        @endif
                         @if ($want->shop)<span>{{ $want->shop }}</span>@endif
                         @if ($want->bought_on)<span>{{ __('bought :date', ['date' => $want->bought_on->format('M j')]) }}</span>@endif
                         @if ($want->priority === TaskPriority::High)<flux:badge size="sm" color="red">{{ __('High') }}</flux:badge>@endif

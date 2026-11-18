@@ -90,7 +90,7 @@ Tick items when they are finished **and tested**. Every phase that adds user-own
 ## Phase 7 — Wants + AI
 
 - [x] `wants`: link fetch (Open Graph, short timeout, SSRF-safe) with manual entry and pasted-description fallback
-- [ ] `SafeToSpend` service: balance − `i_owe` due before the chosen date (capped at remaining) − safety buffer, fully tested
+- [x] `SafeToSpend` service: balance − `i_owe` due before the chosen date (capped at remaining) − safety buffer, fully tested
 - [ ] Ingredient check: conflict-rule matches and duplicates of owned products
 - [ ] `AiClient` interface + Gemini implementation (API key in `.env` only)
 - [ ] `ai_requests`: 10 real calls per user per local day

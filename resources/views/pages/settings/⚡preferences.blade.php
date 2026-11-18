@@ -13,6 +13,7 @@ new #[Title('Preferences')] class extends Component {
     public string $currency = '';
     public string $safety_buffer = '';
     public string $payments_due_days = '';
+    public string $paydays = '';
 
     /**
      * Fill the form with the user's current preferences.
@@ -25,6 +26,7 @@ new #[Title('Preferences')] class extends Component {
         $this->currency = $user->currency->value;
         $this->safety_buffer = $user->safety_buffer_cents->toDecimalString();
         $this->payments_due_days = (string) $user->payments_due_days;
+        $this->paydays = implode(', ', $user->paydays ?? []);
     }
 
     /**
@@ -37,6 +39,7 @@ new #[Title('Preferences')] class extends Component {
             'currency' => $this->currency,
             'safety_buffer' => $this->safety_buffer,
             'payments_due_days' => $this->payments_due_days,
+            'paydays' => $this->paydays,
         ]);
 
         $this->safety_buffer = Auth::user()->safety_buffer_cents->toDecimalString();
@@ -98,6 +101,14 @@ new #[Title('Preferences')] class extends Component {
                 min="{{ UpdatePreferences::MIN_PAYMENTS_DUE_DAYS }}"
                 max="{{ UpdatePreferences::MAX_PAYMENTS_DUE_DAYS }}"
                 inputmode="numeric"
+            />
+
+            <flux:input
+                wire:model="paydays"
+                :label="__('Paydays')"
+                :description="__('Days of the month you get paid, e.g. 15, 30. Safe-to-spend looks ahead to the next one. Empty = end of the month.')"
+                placeholder="15, 30"
+                data-test="paydays-input"
             />
 
             <flux:button variant="primary" type="submit" data-test="update-preferences-button">
