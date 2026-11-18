@@ -1,11 +1,13 @@
 <?php
 
+use App\Actions\Wants\AnalyzeWant;
 use App\Actions\Wants\ChangeWantStatus;
 use App\Actions\Wants\CreateWant;
 use App\Actions\Wants\DeleteWant;
 use App\Actions\Wants\MarkWantBought;
 use App\Actions\Wants\UpdateWant;
 use App\Actions\Wants\WantBookkeeping;
+use App\Livewire\Concerns\ScansIngredientLabels;
 use App\Enums\CategoryKind;
 use App\Enums\FetchStatus;
 use App\Enums\TaskPriority;
@@ -15,6 +17,8 @@ use App\Models\Account;
 use App\Models\Transaction;
 use App\Models\TransactionCategory;
 use App\Models\Want;
+use App\Models\WantAnalysis;
+use App\Services\Ai\AiQuota;
 use App\Services\LinkPreview\DescriptionParser;
 use App\Services\LinkPreview\LinkPreview;
 use App\Services\LinkPreview\ShopName;
@@ -30,6 +34,8 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 
 new #[Title('Wants')] class extends Component {
+    use ScansIngredientLabels;
+
     /** The open tab, kept in the address bar. */
     #[Url]
     public string $status = 'wanted';
@@ -70,6 +76,21 @@ new #[Title('Wants')] class extends Component {
     public function currentStatus(): WantStatus
     {
         return WantStatus::tryFrom($this->status) ?? WantStatus::Wanted;
+    }
+
+    /**
+     * The latest verdict for the want being edited.
+     */
+    #[Computed]
+    public function analysis(): ?WantAnalysis
+    {
+        return $this->editingId === null ? null : WantAnalysis::where('want_id', $this->editingId)->latest('id')->first();
+    }
+
+    #[Computed]
+    public function aiChecksLeft(): int
+    {
+        return app(AiQuota::class)->remaining(Auth::user());
     }
 
     #[Computed]
@@ -295,11 +316,24 @@ new #[Title('Wants')] class extends Component {
         $this->resetForm();
     }
 
+    /**
+     * "Should I buy it?" for the want being edited (D-051).
+     */
+    public function analyze(AnalyzeWant $analyze): void
+    {
+        if ($this->editingId === null) {
+            return;
+        }
+
+        $analyze->handle(Auth::user(), Want::findOrFail($this->editingId));
+        unset($this->analysis, $this->aiChecksLeft);
+    }
+
     private function resetForm(): void
     {
         $this->resetValidation();
         $this->reset('editingId', 'url', 'title', 'price', 'image_url', 'shop', 'description', 'product_type',
-            'expense_category_id', 'ingredients_text', 'priority', 'fetch_status', 'fetchNotice');
+            'expense_category_id', 'ingredients_text', 'priority', 'fetch_status', 'fetchNotice', 'labelPhoto');
     }
 }; ?>
 
@@ -446,7 +480,36 @@ new #[Title('Wants')] class extends Component {
             </flux:select>
 
             @if (in_array($product_type, ['skincare', 'makeup'], true))
-                <flux:textarea wire:model="ingredients_text" :label="__('Ingredients')" :placeholder="__('Paste the ingredient list')" rows="3" />
+                <div class="space-y-2">
+                    <flux:textarea wire:model="ingredients_text" :label="__('Ingredients')" :placeholder="__('Paste the ingredient list')" rows="3" data-test="want-ingredients" />
+                    <x-ingredient-label-scan />
+                </div>
+            @endif
+
+            @if ($editingId !== null && $this->wants->firstWhere('id', $editingId)?->status === WantStatus::Wanted)
+                {{-- Should I buy it? (PHP works out every figure; the AI only explains — D-027, D-051) --}}
+                @php $analysis = $this->analysis; @endphp
+                <section class="space-y-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700" data-test="advisor">
+                    <div class="flex items-center justify-between gap-2">
+                        <flux:heading size="sm">{{ __('Should I buy it?') }}</flux:heading>
+                        <flux:button size="sm" icon="sparkles" wire:click="analyze" data-test="analyze-button">{{ $analysis ? __('Check again') : __('Check') }}</flux:button>
+                    </div>
+                    @if ($analysis)
+                        <div class="flex items-center gap-2">
+                            <flux:badge :color="match ($analysis->verdict) { \App\Enums\Verdict::BuyNow => 'green', \App\Enums\Verdict::Wait => 'amber', \App\Enums\Verdict::Skip => 'red' }" data-test="verdict">{{ __($analysis->verdict->label()) }}</flux:badge>
+                            <flux:text class="text-xs">{{ $analysis->engine === \App\Enums\AnalysisEngine::Ai ? __('Explained by AI') : __('Worked out by simple rules') }}</flux:text>
+                        </div>
+                        <ul class="list-disc space-y-1 ps-5 text-sm">
+                            @foreach ($analysis->reasons as $reason)
+                                <li>{{ $reason }}</li>
+                            @endforeach
+                        </ul>
+                        <flux:text class="text-xs">{{ __('Checked :when, with your figures then. Save changes and check again if things changed.', ['when' => $analysis->updated_at?->timezone(Auth::user()->timezone)->format('M j, g:i A')]) }}</flux:text>
+                    @endif
+                    <flux:text class="text-xs" data-test="ai-notice">
+                        {{ __('The app works out the money. Google Gemini only explains it, and sees the product details, these figures and your ingredient rules — never names, contacts or accounts. :n AI checks left today; after that, simple rules answer.', ['n' => $this->aiChecksLeft]) }}
+                    </flux:text>
+                </section>
             @endif
 
             <flux:input wire:model="image_url" :label="__('Image link')" :placeholder="__('https://…')" />

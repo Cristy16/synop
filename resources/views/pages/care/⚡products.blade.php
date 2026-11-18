@@ -16,6 +16,7 @@ use Flux\Flux;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
+use App\Livewire\Concerns\ScansIngredientLabels;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
@@ -23,6 +24,8 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 
 new #[Title('Personal Care')] class extends Component {
+    use ScansIngredientLabels;
+
     // Filters, kept in the address bar.
     #[Url]
     public string $type = '';
@@ -222,7 +225,7 @@ new #[Title('Personal Care')] class extends Component {
     {
         $this->resetValidation();
         $this->reset('editingId', 'form_type', 'brand', 'name', 'category', 'price', 'purchased_on', 'opened_on', 'pao_months',
-            'printed_expiry_on', 'quantity', 'status', 'ingredients_text', 'units_left', 'low_stock_threshold', 'notes', 'record_expense');
+            'printed_expiry_on', 'quantity', 'status', 'ingredients_text', 'units_left', 'low_stock_threshold', 'notes', 'record_expense', 'labelPhoto');
         $this->account_id = $this->defaultAccountId();
         $this->category_id = $this->defaultCategoryId();
     }
@@ -361,7 +364,10 @@ new #[Title('Personal Care')] class extends Component {
                 </div>
             @endif
 
-            <flux:textarea wire:model="ingredients_text" :label="__('Ingredients')" :placeholder="__('Paste the ingredient list')" rows="3" />
+            <div class="space-y-2">
+                <flux:textarea wire:model="ingredients_text" :label="__('Ingredients')" :placeholder="__('Paste the ingredient list')" rows="3" />
+                <x-ingredient-label-scan />
+            </div>
             <flux:textarea wire:model="notes" :label="__('Notes')" rows="2" />
 
             {{-- Record as expense (D-045) --}}

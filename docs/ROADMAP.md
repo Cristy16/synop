@@ -91,15 +91,15 @@ Tick items when they are finished **and tested**. Every phase that adds user-own
 
 - [x] `wants`: link fetch (Open Graph, short timeout, SSRF-safe) with manual entry and pasted-description fallback
 - [x] `SafeToSpend` service: balance − `i_owe` due before the chosen date (capped at remaining) − safety buffer, fully tested
-- [ ] Ingredient check: conflict-rule matches and duplicates of owned products
-- [ ] `AiClient` interface + Gemini implementation (API key in `.env` only)
-- [ ] `ai_requests`: 10 real calls per user per local day
-- [ ] Ingredient label scan (image sent once, never stored; the user reviews the text) for products and wants
-- [ ] Want verdict (buy now / wait / skip + 2–3 reasons), reply validated, cached in `want_analyses` by `inputs_hash`
-- [ ] Rules-based fallback when the AI fails or the limit is reached
-- [ ] In-app notice when AI is used
+- [x] Ingredient check: conflict-rule matches and duplicates of owned products
+- [x] `AiClient` interface + Gemini implementation (API key in `.env` only)
+- [x] `ai_requests`: 10 real calls per user per local day
+- [x] Ingredient label scan (image sent once, never stored; the user reviews the text) for products and wants
+- [x] Want verdict (buy now / wait / skip + 2–3 reasons), reply validated, cached in `want_analyses` by `inputs_hash`
+- [x] Rules-based fallback when the AI fails or the limit is reached
+- [x] In-app notice when AI is used
 - [x] Marking a want bought can record an expense
-- [ ] AI mocked in tests; isolation tests for wants, analyses and AI requests
+- [x] AI mocked in tests; isolation tests for wants, analyses and AI requests
 
 ## Phase 8 — PWA + reminders
 

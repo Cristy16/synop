@@ -12,6 +12,8 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\VitaminDose;
 use App\Models\Want;
+use App\Services\Ai\AiClient;
+use App\Services\Ai\GeminiClient;
 use App\Services\LinkPreview\DnsHostResolver;
 use App\Services\LinkPreview\HostResolver;
 use Carbon\CarbonImmutable;
@@ -31,6 +33,9 @@ class AppServiceProvider extends ServiceProvider
     {
         // Real DNS for link previews; tests swap in a fake.
         $this->app->bind(HostResolver::class, DnsHostResolver::class);
+
+        // The AI provider behind its interface (D-026); tests swap in a fake.
+        $this->app->bind(AiClient::class, GeminiClient::class);
     }
 
     /**

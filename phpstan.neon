@@ -13,5 +13,7 @@ parameters:
         - tests/Support/OwnedThing.php
         # Uses TicksTasks, whose real users are Livewire components in resources/views (not analysed).
         - tests/Support/TicksTasksHost.php
+        # Same for ScansIngredientLabels.
+        - tests/Support/ScansIngredientLabelsHost.php
 
     level: 7
