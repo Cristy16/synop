@@ -55,13 +55,13 @@ Tick items when they are finished **and tested**. Every phase that adds user-own
 ## Phase 4 — Schedule Engine
 
 - [x] Design written to DECISIONS.md and approved (stop gate)
-- [ ] `schedule_rules` + `schedule_logs` migrations, models, Policies
-- [ ] `ScheduleEngine` (pure PHP), tests written first: daily, every N days, weekly, monthly (day 31 → last day), start/end dates, paused rules
-- [ ] `UpdateSchedule` Action: versioned rules (old rule ends yesterday, new one starts today)
+- [x] `schedule_rules` + `schedule_logs` migrations, models, Policies
+- [x] `ScheduleEngine` (pure PHP), tests written first: daily, every N days, weekly, monthly (day 31 → last day), start/end dates, paused rules
+- [x] `UpdateSchedule` Action: versioned rules (old rule ends yesterday, new one starts today)
 - [ ] Recurring tasks
 - [ ] Today view uses the engine; mark done / skip / un-tick writes `schedule_logs`
 - [ ] Installment debts: rule + `installment_cents`, next due date, the linked task's due date moves forward
-- [ ] Isolation tests for rules and logs
+- [x] Isolation tests for rules and logs
 
 ## Phase 5 — Personal Care
 

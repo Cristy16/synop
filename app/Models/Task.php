@@ -43,6 +43,20 @@ class Task extends Model
     public const PROTECTED_SOURCES = ['activity', 'debt'];
 
     /**
+     * Polymorphic children have no foreign key, so they are cleaned up here (DATABASE §1.5).
+     * Their logs go with them through schedule_logs' cascading foreign key.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (Task $task): void {
+            ScheduleRule::forUser($task->user_id)
+                ->where('schedulable_type', 'task')
+                ->where('schedulable_id', $task->id)
+                ->delete();
+        });
+    }
+
+    /**
      * @var array<string, mixed>
      */
     protected $attributes = [
