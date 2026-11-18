@@ -23,6 +23,10 @@
                     <flux:sidebar.item icon="banknotes" :href="route('finance.overview')" :current="request()->routeIs('finance.*')" wire:navigate>
                         {{ __('Finance') }}
                     </flux:sidebar.item>
+
+                    <flux:sidebar.item icon="sparkles" :href="route('care.products')" :current="request()->routeIs('care.*')" wire:navigate>
+                        {{ __('Personal Care') }}
+                    </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 

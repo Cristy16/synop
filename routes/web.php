@@ -16,6 +16,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('finance/accounts', 'pages::finance.accounts')->name('finance.accounts');
     Route::livewire('finance/transactions', 'pages::finance.transactions')->name('finance.transactions');
     Route::livewire('finance/debts', 'pages::finance.debts')->name('finance.debts');
+
+    // Personal Care: one sidebar link, tabs (D-045).
+    Route::livewire('care', 'pages::care.products')->name('care.products');
+    Route::livewire('care/spending', 'pages::care.spending')->name('care.spending');
 });
 
 require __DIR__.'/settings.php';

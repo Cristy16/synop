@@ -65,16 +65,16 @@ Tick items when they are finished **and tested**. Every phase that adds user-own
 
 ## Phase 5 — Personal Care
 
-- [ ] `products` (skincare / makeup / vitamin), status, `expires_on` = earlier of printed expiry and opened + PAO
-- [ ] "Expiring soon" list (≤ 14 days)
-- [ ] Ingredient list (pasted text)
+- [x] `products` (skincare / makeup / vitamin), status, `expires_on` = earlier of printed expiry and opened + PAO
+- [x] "Expiring soon" list (≤ 14 days)
+- [x] Ingredient list (pasted text)
 - [ ] `ingredient_tags` (+ starter tags on registration), pivot rebuilt when ingredients or keywords change
 - [ ] `conflict_rules` (same routine / same day)
 - [ ] One AM and one PM `routine` per user (created on registration), ordered `routine_steps`, each with a schedule
 - [ ] Conflict warnings in Today's routine
 - [ ] `vitamin_doses` with schedules; done decrements `units_left`
 - [ ] Low-stock task (a new one only after restock and a later drop)
-- [ ] Monthly spending per type; optional "record expense" transaction on purchase
+- [x] Monthly spending per type; optional "record expense" transaction on purchase
 - [ ] Today: Personal Care and Vitamins sections live
 - [ ] Isolation tests for every Personal Care model
 
