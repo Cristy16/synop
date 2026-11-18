@@ -1,48 +1,36 @@
 <?php
 
-use App\Actions\Tasks\CompleteTask;
-use App\Actions\Tasks\ReopenTask;
-use App\Enums\TaskPriority;
-use App\Models\Task;
+use App\Livewire\Concerns\TicksTasks;
 use App\Services\TaskList;
-use Illuminate\Database\Eloquent\Collection;
+use App\Support\TaskRow;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 /**
- * Today → Tasks: due today plus overdue. Ticked tasks stay, crossed out, until tomorrow (D-038).
+ * Today → Tasks: one-off tasks due today plus overdue (ticked ones stay, crossed
+ * out, until tomorrow — D-038), and today's repeating tasks with Skip (D-043).
  */
 new class extends Component {
+    use TicksTasks;
+
     /**
-     * @return Collection<int, Task>
+     * @return list<TaskRow>
      */
     #[Computed]
-    public function tasks(): Collection
+    public function rows(): array
     {
-        return app(TaskList::class)->dueByToday(Auth::user());
-    }
-
-    #[Computed]
-    public function today(): string
-    {
-        return app(TaskList::class)->today(Auth::user());
-    }
-
-    public function toggle(int $id, CompleteTask $completeTask, ReopenTask $reopenTask): void
-    {
-        // Another user's id isn't found: 404 (rule 11).
-        $task = Task::findOrFail($id);
-
-        $task->isCompleted()
-            ? $reopenTask->handle(Auth::user(), $task)
-            : $completeTask->handle(Auth::user(), $task);
+        return app(TaskList::class)->todayRows(Auth::user());
     }
 }; ?>
 
 @php
-    $total = $this->tasks->count();
-    $done = $this->tasks->filter->isCompleted()->count();
+    $tz = auth()->user()->timezone;
+    $today = now($tz)->toDateString();
+    // Skipped occurrences don't count either way.
+    $counted = array_filter($this->rows, fn (TaskRow $row) => ! $row->isSkipped());
+    $total = count($counted);
+    $done = count(array_filter($counted, fn (TaskRow $row) => $row->isDone()));
 @endphp
 
 <x-today.section
@@ -53,42 +41,10 @@ new class extends Component {
     :link="route('tasks.index')"
     :link-label="__('See all tasks')"
 >
-    @if ($total > 0)
+    @if (count($this->rows) > 0)
         <ul class="divide-y divide-zinc-200 dark:divide-zinc-700">
-            @foreach ($this->tasks as $task)
-                @php $overdue = ! $task->isCompleted() && $task->due_on?->toDateString() < $this->today; @endphp
-                <li wire:key="today-task-{{ $task->id }}" class="flex items-start gap-3 px-4 py-3">
-                    <div class="pt-0.5">
-                        <flux:checkbox
-                            :checked="$task->isCompleted()"
-                            wire:click="toggle({{ $task->id }})"
-                            :aria-label="$task->isCompleted() ? __('Reopen :title', ['title' => $task->title]) : __('Complete :title', ['title' => $task->title])"
-                        />
-                    </div>
-
-                    <div class="min-w-0 flex-1">
-                        <span @class([
-                            'block break-words text-sm font-medium',
-                            'text-zinc-400 line-through dark:text-zinc-500' => $task->isCompleted(),
-                        ])>{{ $task->title }}</span>
-
-                        @if ($overdue || $task->due_time || $task->priority === TaskPriority::High)
-                            <span class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
-                                @if ($overdue)
-                                    <span class="font-medium text-red-600 dark:text-red-400" data-test="overdue-label">
-                                        {{ __('Overdue · :date', ['date' => $task->due_on->format('M j')]) }}
-                                    </span>
-                                @endif
-                                @if ($task->due_time)
-                                    <span>{{ \Carbon\CarbonImmutable::createFromFormat('H:i', substr($task->due_time, 0, 5))->format('g:i A') }}</span>
-                                @endif
-                                @if ($task->priority === TaskPriority::High && ! $task->isCompleted())
-                                    <flux:badge size="sm" color="red">{{ __('High') }}</flux:badge>
-                                @endif
-                            </span>
-                        @endif
-                    </div>
-                </li>
+            @foreach ($this->rows as $row)
+                @include('partials.tasks.row', ['row' => $row, 'today' => $today, 'tz' => $tz, 'mode' => 'today'])
             @endforeach
         </ul>
     @endif

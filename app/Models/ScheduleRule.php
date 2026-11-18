@@ -76,4 +76,28 @@ class ScheduleRule extends Model
     {
         return $this->paused_at !== null;
     }
+
+    /**
+     * The pattern in words: "Every day", "Every 3 days", "Mon, Wed, Fri", "Monthly on the 31st".
+     */
+    public function summary(): string
+    {
+        $names = [1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat', 7 => 'Sun'];
+
+        return match ($this->frequency) {
+            Frequency::Daily => __('Every day'),
+            Frequency::EveryNDays => __('Every :n days', ['n' => $this->interval]),
+            Frequency::Weekly => count($this->weekdays ?? []) === 7
+                ? __('Every day')
+                : implode(', ', array_map(fn (int $d) => __($names[$d]), array_map('intval', $this->weekdays ?? []))),
+            Frequency::Monthly => __('Monthly on the :day', ['day' => $this->ordinal((int) $this->day_of_month)]),
+        };
+    }
+
+    private function ordinal(int $n): string
+    {
+        $suffix = in_array($n % 100, [11, 12, 13], true) ? 'th' : (['th', 'st', 'nd', 'rd'][$n % 10] ?? 'th');
+
+        return $n.$suffix;
+    }
 }

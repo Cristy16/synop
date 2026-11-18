@@ -11,5 +11,7 @@ parameters:
         - routes/
         # Uses BelongsToUser, so the trait is analysed before any app model uses it.
         - tests/Support/OwnedThing.php
+        # Uses TicksTasks, whose real users are Livewire components in resources/views (not analysed).
+        - tests/Support/TicksTasksHost.php
 
     level: 7

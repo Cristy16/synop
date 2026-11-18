@@ -34,6 +34,11 @@ class TaskPolicy
             return Response::deny(__('Record a payment instead. This task completes when the debt is paid off.'));
         }
 
+        // A repeating task is never done for good: each day is ticked on its own (D-043).
+        if ($task->isRecurring()) {
+            return Response::deny(__('This task repeats. Tick today\'s one instead.'));
+        }
+
         return Response::allow();
     }
 

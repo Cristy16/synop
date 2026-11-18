@@ -9,6 +9,7 @@ use Database\Factories\TaskFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
@@ -84,6 +85,38 @@ class Task extends Model
     public function source(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    /**
+     * All versions of this task's repeat rule (D-013).
+     *
+     * @return MorphMany<ScheduleRule, $this>
+     */
+    public function scheduleRules(): MorphMany
+    {
+        return $this->morphMany(ScheduleRule::class, 'schedulable');
+    }
+
+    /**
+     * The repeat rule that applies today or next: not ended yet. Null when the task
+     * doesn't repeat (it is then a normal one-off task). Recurring tasks ignore
+     * `due_on` and are done per date in schedule_logs (D-043).
+     */
+    public function currentRule(): ?ScheduleRule
+    {
+        $today = now($this->user->timezone)->toDateString();
+
+        return ScheduleRule::forUser($this->user_id)
+            ->where('schedulable_type', 'task')
+            ->where('schedulable_id', $this->id)
+            ->where(fn ($q) => $q->whereNull('ends_on')->orWhereDate('ends_on', '>=', $today))
+            ->orderBy('starts_on')
+            ->first();
+    }
+
+    public function isRecurring(): bool
+    {
+        return $this->currentRule() !== null;
     }
 
     public function isCompleted(): bool
