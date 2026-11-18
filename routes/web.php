@@ -5,7 +5,9 @@ use Illuminate\Support\Facades\Route;
 Route::view('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::view('dashboard', 'dashboard')->name('dashboard');
+    // Today is the home screen after login (D-038). Old /dashboard links land there.
+    Route::livewire('today', 'pages::today.index')->name('today');
+    Route::redirect('dashboard', 'today')->name('dashboard');
 
     Route::livewire('tasks', 'pages::tasks.index')->name('tasks.index');
 });

@@ -34,8 +34,8 @@ Tick items when they are finished **and tested**. Every phase that adds user-own
 - [x] `tasks` migration, model, factory, Policy (polymorphic `source`, unique per source)
 - [x] Actions: create, update, complete, reopen, delete
 - [x] Tasks page: quick-add, filters (today / upcoming / overdue / done), edit, complete checkbox
-- [ ] Today page as the home screen after login
-- [ ] Today sections as separate Livewire components: Tasks (live), Personal Care, Vitamins, Classes, Payments Due (empty states)
+- [x] Today page as the home screen after login
+- [x] Today sections as separate Livewire components: Tasks (live), Personal Care, Vitamins, Classes, Payments Due (empty states)
 - [x] Isolation tests for tasks
 
 ## Phase 3 — Finance
@@ -119,3 +119,4 @@ Tick items when they are finished **and tested**. Every phase that adds user-own
 ## Later (after MVP)
 
 - [ ] Currency conversion when a user changes currency (exchange rate + convert every money column). Today changing currency only swaps the symbol (D-035).
+- [ ] History / weekly summary: tasks done per day this week (other modules join as they are built). Requested 2026-11-18 (D-038).

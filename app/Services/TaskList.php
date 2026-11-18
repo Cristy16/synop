@@ -35,6 +35,30 @@ class TaskList
     }
 
     /**
+     * The Today page's task list: due today or earlier, and either still open
+     * or completed today (they stay, crossed out, until tomorrow — D-038).
+     * Overdue first (oldest first), then today's by time.
+     *
+     * @return Collection<int, Task>
+     */
+    public function dueByToday(User $user): Collection
+    {
+        $today = $this->today($user);
+        // Start of the user's day, as a UTC instant to compare with completed_at (rule 9).
+        $startOfToday = now($user->timezone)->startOfDay()->utc();
+
+        return Task::forUser($user)
+            ->whereDate('due_on', '<=', $today)
+            ->where(fn (Builder $q) => $q->whereNull('completed_at')->orWhere('completed_at', '>=', $startOfToday))
+            ->orderBy('due_on')
+            ->orderByRaw('due_time is null')
+            ->orderBy('due_time')
+            ->tap($this->byPriority(...))
+            ->orderBy('id')
+            ->get();
+    }
+
+    /**
      * How many tasks each tab holds.
      *
      * @return array<string, int> keyed by TaskFilter value
