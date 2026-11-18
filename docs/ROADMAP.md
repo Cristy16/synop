@@ -40,10 +40,10 @@ Tick items when they are finished **and tested**. Every phase that adds user-own
 
 ## Phase 3 — Finance
 
-- [ ] `accounts` (cash / e-wallet / bank, opening balance, soft deletes)
-- [ ] `transaction_categories` + default set created on registration
-- [ ] `transactions` with types `income`, `expense`, `transfer`, `debt_in`, `debt_out` and the type rules from DATABASE §3.2
-- [ ] Account balance and total balance (transfers don't change the total), with tests
+- [x] `accounts` (cash / e-wallet / bank, opening balance, soft deletes)
+- [x] `transaction_categories` + default set created on registration
+- [x] `transactions` with types `income`, `expense`, `transfer`, `debt_in`, `debt_out` and the type rules from DATABASE §3.2
+- [x] Account balance and total balance (transfers don't change the total), with tests
 - [ ] `contacts`
 - [ ] One-off `debts` in both directions; principal creates a `debt_in`/`debt_out` transaction when an account is set
 - [ ] `debt_payments`: each creates one transaction; overpayment rejected; settles at remaining = 0
