@@ -3,6 +3,7 @@
 namespace App\Actions\Fortify;
 
 use App\Actions\Finance\CreateDefaultCategories;
+use App\Actions\PersonalCare\CreateStarterCareData;
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
 use App\Models\User;
@@ -14,7 +15,10 @@ class CreateNewUser implements CreatesNewUsers
 {
     use PasswordValidationRules, ProfileValidationRules;
 
-    public function __construct(private CreateDefaultCategories $createDefaultCategories) {}
+    public function __construct(
+        private CreateDefaultCategories $createDefaultCategories,
+        private CreateStarterCareData $createStarterCareData,
+    ) {}
 
     /**
      * Validate and create a newly registered user, with their starter data
@@ -37,6 +41,7 @@ class CreateNewUser implements CreatesNewUsers
             ]);
 
             $this->createDefaultCategories->handle($user);
+            $this->createStarterCareData->handle($user);
 
             return $user;
         });

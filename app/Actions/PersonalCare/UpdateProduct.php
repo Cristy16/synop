@@ -11,7 +11,7 @@ use Illuminate\Validation\ValidationException;
 
 class UpdateProduct
 {
-    public function __construct(private ProductInput $input, private ProductBookkeeping $books) {}
+    public function __construct(private ProductInput $input, private ProductBookkeeping $books, private SyncIngredientTags $tags) {}
 
     /**
      * Edit a product. The expiry date is worked out again and the expense
@@ -33,6 +33,7 @@ class UpdateProduct
             $product->save();
 
             $this->books->syncExpense($product, $values['expense']);
+            $this->tags->forProduct($product);
 
             return $product;
         });

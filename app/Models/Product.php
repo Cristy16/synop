@@ -12,6 +12,7 @@ use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -72,6 +73,16 @@ class Product extends Model
             'units_left' => 'integer',
             'low_stock_threshold' => 'integer',
         ];
+    }
+
+    /**
+     * Ingredient groups its ingredients match (rebuilt by the Personal Care Actions).
+     *
+     * @return BelongsToMany<IngredientTag, $this>
+     */
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(IngredientTag::class);
     }
 
     /**

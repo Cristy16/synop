@@ -19,6 +19,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Personal Care: one sidebar link, tabs (D-045).
     Route::livewire('care', 'pages::care.products')->name('care.products');
+    Route::livewire('care/routines', 'pages::care.routines')->name('care.routines');
+    Route::livewire('care/conflicts', 'pages::care.conflicts')->name('care.conflicts');
     Route::livewire('care/spending', 'pages::care.spending')->name('care.spending');
 });
 

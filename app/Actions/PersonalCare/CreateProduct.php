@@ -9,7 +9,7 @@ use Illuminate\Validation\ValidationException;
 
 class CreateProduct
 {
-    public function __construct(private ProductInput $input, private ProductBookkeeping $books) {}
+    public function __construct(private ProductInput $input, private ProductBookkeeping $books, private SyncIngredientTags $tags) {}
 
     /**
      * Add a product. Its expiry date is worked out (D-016), and with
@@ -30,6 +30,7 @@ class CreateProduct
             $product->save();
 
             $this->books->syncExpense($product, $values['expense']);
+            $this->tags->forProduct($product);
 
             return $product;
         });

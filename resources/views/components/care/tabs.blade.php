@@ -1,12 +1,14 @@
 {{--
-    The tab bar shared by the Personal Care pages (D-045). Routines (6.2) and
-    Vitamins (6.3) join it later. Pages pass their own route name, as in Finance.
+    The tab bar shared by the Personal Care pages (D-045, D-046). Vitamins (6.3)
+    join it later. Pages pass their own route name, as in Finance.
 --}}
 @props(['current'])
 
 @php
     $tabs = [
         'care.products' => __('Products'),
+        'care.routines' => __('Routines'),
+        'care.conflicts' => __('Conflicts'),
         'care.spending' => __('Spending'),
     ];
 @endphp
