@@ -31,6 +31,10 @@
                     <flux:sidebar.item icon="academic-cap" :href="route('school.courses')" :current="request()->routeIs('school.*')" wire:navigate>
                         {{ __('School') }}
                     </flux:sidebar.item>
+
+                    <flux:sidebar.item icon="gift" :href="route('wants.index')" :current="request()->routeIs('wants.*')" wire:navigate>
+                        {{ __('Wants') }}
+                    </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 

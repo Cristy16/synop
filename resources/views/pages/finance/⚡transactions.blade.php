@@ -109,9 +109,11 @@ new #[Title('Transactions')] class extends Component {
         $this->resetForm();
 
         if ($transaction->hasSource()) {
-            Flux::toast(text: $transaction->source_type === 'product'
-                ? __('This one was made by a product. Change it in Personal Care.')
-                : __('This one was made by a debt. Change it on the Debts tab.'));
+            Flux::toast(text: match ($transaction->source_type) {
+                'product' => __('This one was made by a product. Change it in Personal Care.'),
+                'want' => __('This one was made by a want. Change it on the Wants page.'),
+                default => __('This one was made by a debt. Change it on the Debts tab.'),
+            });
 
             return;
         }
@@ -251,7 +253,7 @@ new #[Title('Transactions')] class extends Component {
                                 <span class="break-words">· {{ $transaction->note }}</span>
                             @endif
                             @if ($transaction->hasSource())
-                                <flux:badge size="sm" color="blue">{{ $transaction->source_type === 'product' ? __('From product') : __('From debt') }}</flux:badge>
+                                <flux:badge size="sm" color="blue">{{ match ($transaction->source_type) { 'product' => __('From product'), 'want' => __('From want'), default => __('From debt') } }}</flux:badge>
                             @endif
                         </span>
                     </div>

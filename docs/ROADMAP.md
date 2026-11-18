@@ -89,7 +89,7 @@ Tick items when they are finished **and tested**. Every phase that adds user-own
 
 ## Phase 7 — Wants + AI
 
-- [ ] `wants`: link fetch (Open Graph, short timeout, SSRF-safe) with manual entry and pasted-description fallback
+- [x] `wants`: link fetch (Open Graph, short timeout, SSRF-safe) with manual entry and pasted-description fallback
 - [ ] `SafeToSpend` service: balance − `i_owe` due before the chosen date (capped at remaining) − safety buffer, fully tested
 - [ ] Ingredient check: conflict-rule matches and duplicates of owned products
 - [ ] `AiClient` interface + Gemini implementation (API key in `.env` only)
@@ -98,7 +98,7 @@ Tick items when they are finished **and tested**. Every phase that adds user-own
 - [ ] Want verdict (buy now / wait / skip + 2–3 reasons), reply validated, cached in `want_analyses` by `inputs_hash`
 - [ ] Rules-based fallback when the AI fails or the limit is reached
 - [ ] In-app notice when AI is used
-- [ ] Marking a want bought can record an expense
+- [x] Marking a want bought can record an expense
 - [ ] AI mocked in tests; isolation tests for wants, analyses and AI requests
 
 ## Phase 8 — PWA + reminders

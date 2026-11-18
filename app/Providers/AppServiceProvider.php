@@ -11,6 +11,9 @@ use App\Models\RoutineStep;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\VitaminDose;
+use App\Models\Want;
+use App\Services\LinkPreview\DnsHostResolver;
+use App\Services\LinkPreview\HostResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Blade;
@@ -26,7 +29,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Real DNS for link previews; tests swap in a fake.
+        $this->app->bind(HostResolver::class, DnsHostResolver::class);
     }
 
     /**
@@ -50,6 +54,7 @@ class AppServiceProvider extends ServiceProvider
             'task' => Task::class,
             'user' => User::class,
             'vitamin_dose' => VitaminDose::class,
+            'want' => Want::class,
         ]);
     }
 

@@ -28,6 +28,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('school', 'pages::school.courses')->name('school.courses');
     Route::livewire('school/activities', 'pages::school.activities')->name('school.activities');
     Route::livewire('school/semesters', 'pages::school.semesters')->name('school.semesters');
+
+    // Wants list (D-049).
+    Route::livewire('wants', 'pages::wants.index')->name('wants.index');
 });
 
 require __DIR__.'/settings.php';
