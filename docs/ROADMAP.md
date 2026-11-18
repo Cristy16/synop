@@ -54,7 +54,7 @@ Tick items when they are finished **and tested**. Every phase that adds user-own
 
 ## Phase 4 — Schedule Engine
 
-- [ ] Design written to DECISIONS.md and approved (stop gate)
+- [x] Design written to DECISIONS.md and approved (stop gate)
 - [ ] `schedule_rules` + `schedule_logs` migrations, models, Policies
 - [ ] `ScheduleEngine` (pure PHP), tests written first: daily, every N days, weekly, monthly (day 31 → last day), start/end dates, paused rules
 - [ ] `UpdateSchedule` Action: versioned rules (old rule ends yesterday, new one starts today)
