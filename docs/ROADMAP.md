@@ -80,12 +80,12 @@ Tick items when they are finished **and tested**. Every phase that adds user-own
 
 ## Phase 6 — Education
 
-- [ ] `semesters` (one active per user, archive)
-- [ ] `courses`
-- [ ] `class_sessions`, each with a schedule rule (defaults to the semester dates)
-- [ ] `activities`; each creates and updates a linked task, which can't be deleted directly
-- [ ] Today: Classes section live; archived semesters hidden
-- [ ] Isolation tests for every Education model
+- [x] `semesters` (one active per user, archive)
+- [x] `courses`
+- [x] `class_sessions`, each with a schedule rule (defaults to the semester dates)
+- [x] `activities`; each creates and updates a linked task, which can't be deleted directly
+- [x] Today: Classes section live; archived semesters hidden
+- [x] Isolation tests for every Education model
 
 ## Phase 7 — Wants + AI
 

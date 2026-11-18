@@ -32,7 +32,7 @@ test('Today shows the date in the user\'s timezone and all five sections', funct
         ->assertSee('Nothing due today.')
         ->assertSee('No routine steps today.')
         ->assertSee('No vitamins to take today.')
-        ->assertSee('Today&#039;s classes will show here.', false)
+        ->assertSee('No classes today.')
         ->assertSee('Nothing due in the next 7 days.');
 });
 

@@ -23,6 +23,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('care/vitamins', 'pages::care.vitamins')->name('care.vitamins');
     Route::livewire('care/conflicts', 'pages::care.conflicts')->name('care.conflicts');
     Route::livewire('care/spending', 'pages::care.spending')->name('care.spending');
+
+    // School: one sidebar link, tabs (D-048).
+    Route::livewire('school', 'pages::school.courses')->name('school.courses');
+    Route::livewire('school/activities', 'pages::school.activities')->name('school.activities');
+    Route::livewire('school/semesters', 'pages::school.semesters')->name('school.semesters');
 });
 
 require __DIR__.'/settings.php';

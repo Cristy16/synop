@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Activity;
+use App\Models\ClassSession;
 use App\Models\Debt;
 use App\Models\DebtPayment;
 use App\Models\Product;
@@ -39,6 +41,8 @@ class AppServiceProvider extends ServiceProvider
         // Polymorphic *_type columns store these aliases, never class names (CLAUDE.md rule 14).
         // Every model used in a polymorphic relation must be listed here.
         Relation::enforceMorphMap([
+            'activity' => Activity::class,
+            'class_session' => ClassSession::class,
             'debt' => Debt::class,
             'debt_payment' => DebtPayment::class,
             'product' => Product::class,
