@@ -9,7 +9,7 @@ use Illuminate\Validation\ValidationException;
 
 class CreateProduct
 {
-    public function __construct(private ProductInput $input, private ProductBookkeeping $books, private SyncIngredientTags $tags) {}
+    public function __construct(private ProductInput $input, private ProductBookkeeping $books, private SyncIngredientTags $tags, private LowStockReminder $reminder) {}
 
     /**
      * Add a product. Its expiry date is worked out (D-016), and with
@@ -31,6 +31,8 @@ class CreateProduct
 
             $this->books->syncExpense($product, $values['expense']);
             $this->tags->forProduct($product);
+            // A vitamin added already at or below its level gets its reminder right away.
+            $this->reminder->sync($product, wasLow: false);
 
             return $product;
         });

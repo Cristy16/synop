@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\RoutineStep;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\VitaminDose;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Blade;
@@ -44,6 +45,7 @@ class AppServiceProvider extends ServiceProvider
             'routine_step' => RoutineStep::class,
             'task' => Task::class,
             'user' => User::class,
+            'vitamin_dose' => VitaminDose::class,
         ]);
     }
 

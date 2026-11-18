@@ -72,11 +72,11 @@ Tick items when they are finished **and tested**. Every phase that adds user-own
 - [x] `conflict_rules` (same routine / same day)
 - [x] One AM and one PM `routine` per user (created on registration), ordered `routine_steps`, each with a schedule
 - [x] Conflict warnings in Today's routine
-- [ ] `vitamin_doses` with schedules; done decrements `units_left`
-- [ ] Low-stock task (a new one only after restock and a later drop)
+- [x] `vitamin_doses` with schedules; done decrements `units_left`
+- [x] Low-stock task (a new one only after restock and a later drop)
 - [x] Monthly spending per type; optional "record expense" transaction on purchase
-- [ ] Today: Personal Care and Vitamins sections live
-- [ ] Isolation tests for every Personal Care model
+- [x] Today: Personal Care and Vitamins sections live
+- [x] Isolation tests for every Personal Care model
 
 ## Phase 6 — Education
 

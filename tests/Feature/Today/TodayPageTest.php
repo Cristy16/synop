@@ -31,7 +31,7 @@ test('Today shows the date in the user\'s timezone and all five sections', funct
         ->assertSeeInOrder(['Tasks', 'Personal Care', 'Vitamins', 'Classes', 'Payments Due'])
         ->assertSee('Nothing due today.')
         ->assertSee('No routine steps today.')
-        ->assertSee('Today&#039;s vitamin doses will show here.', false)
+        ->assertSee('No vitamins to take today.')
         ->assertSee('Today&#039;s classes will show here.', false)
         ->assertSee('Nothing due in the next 7 days.');
 });
