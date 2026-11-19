@@ -53,9 +53,10 @@ class WantAdvisorInputs
 
         return [
             'product' => [
-                'title' => $want->title,
+                // Short, so a long page title can't carry much text into the prompt (D-054).
+                'title' => mb_substr($want->title, 0, 120),
                 'type' => $want->product_type?->value,
-                'shop' => $want->shop,
+                'shop' => $want->shop === null ? null : mb_substr($want->shop, 0, 60),
                 'priority' => $want->priority->value,
             ],
             'price_cents' => $price?->cents(),

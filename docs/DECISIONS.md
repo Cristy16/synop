@@ -359,3 +359,17 @@ Newest entries go at the bottom. Each entry gives the date, the decision, the re
 - **Reason:** Free, works on installed apps on Android and iPhone (iOS 16.4+), and the server never calls arbitrary addresses.
 - **Rejected:** Email (PRD chose push); amounts or contact names in the push; sending a missed summary in the evening.
 - **Setup:** run `php artisan webpush:vapid` once (it writes `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` to `.env`), set `VAPID_SUBJECT` to the site URL or a `mailto:`, and run the scheduler (`php artisan schedule:work` locally, a cron entry for `schedule:run` in production).
+
+### D-054 · Security audit fixes
+- **Date:** 2026-11-19 · **Source:** BUILD-PROMPTS Prompt 10.1 (stop gate); owner approved fixing findings 1–8 ("you decide for all")
+- **Audit result:** no high-severity issues. Confirmed: every user-owned model has `BelongsToUser`, a Policy and isolation tests; every app route needs login and a verified email; all 15 foreign-id rules filter by `user_id`; every record-id Livewire property is `#[Locked]`; no unescaped user text and only integers inside JS attributes; no CSRF exemptions; `user_id` never fillable; `.env` never committed and API/VAPID secrets stay server-side; push endpoints allow-listed. `ingredient_tag_product` has no `user_id` by design and is only written from user-scoped lists.
+- **Fixes:**
+  1. `LinkPreview::isPublic` also blocks special-use ranges PHP doesn't flag: `100.64.0.0/10` (carrier NAT; cloud metadata at `100.100.100.200`), `192.0.0.0/24`, test nets, `198.18.0.0/15`, multicast, and IPv6 forms carrying IPv4 (`64:ff9b::/96`, `64:ff9b:1::/48`, `2002::/16`, `2001::/32`), `100::/64`, `ff00::/8`.
+  2. Link reads on the Wants page: 20 a minute per user (`FetchWantLink`); past that the link is kept and the details typed.
+  3. Sign-up: 10 new accounts an hour per network address (`CreateNewUser`); failed attempts don't count.
+  4. Password confirmation: 5 wrong tries a minute per user (`ConfirmUserPassword` via `Fortify::confirmPasswordsUsing`).
+  5. AI calls are reserved before they're made under a per-user cache lock (`ReserveAiCall`), so simultaneous calls can't pass 10 a day; a crashed call still counts.
+  6. "Send a test" push: 3 every 10 minutes per user.
+  7. `SecurityHeaders` middleware on the web group: `X-Frame-Options: DENY`, CSP `frame-ancestors 'none'; base-uri 'self'; object-src 'none'`, `nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, a Permissions-Policy, and HSTS on HTTPS requests. A full script CSP was left out: Livewire/Alpine need `unsafe-eval` without their CSP builds.
+  8. The verdict prompt marks the product fields as untrusted page text; title and shop are cut to 120/60 characters.
+- **Before going live (not code):** `APP_DEBUG=false`, `SESSION_SECURE_COOKIE=true`, HTTPS only. Want images load from shop servers (they see the viewer's IP; `no-referrer` is set).

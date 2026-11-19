@@ -113,9 +113,9 @@ Tick items when they are finished **and tested**. Every phase that adds user-own
 
 ## Phase 9 — Security review
 
-- [ ] Audit (stop gate): cross-user access on every model, route and Livewire action; mass assignment; validation; XSS; CSRF; rate limits on auth and AI; secrets; SSRF in the link fetcher
-- [ ] Findings fixed after approval
-- [ ] Every user-owned model confirmed to have `BelongsToUser`, a Policy and an isolation test
+- [x] Audit (stop gate): cross-user access on every model, route and Livewire action; mass assignment; validation; XSS; CSRF; rate limits on auth and AI; secrets; SSRF in the link fetcher
+- [x] Findings fixed after approval
+- [x] Every user-owned model confirmed to have `BelongsToUser`, a Policy and an isolation test
 
 ## Later (after MVP)
 
