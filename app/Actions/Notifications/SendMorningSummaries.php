@@ -7,6 +7,8 @@ use App\Notifications\MorningSummary as MorningSummaryNotification;
 use App\Services\MorningSummary;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class SendMorningSummaries
@@ -48,11 +50,25 @@ class SendMorningSummaries
         return $sent;
     }
 
+    /** "Send a test" pushes per user per 10 minutes (audit finding 6, D-054). */
+    public const TESTS_PER_10_MINUTES = 3;
+
     /**
      * Send it right now (the "Send a test" button), without touching the once-a-day mark.
+     *
+     * @throws ValidationException after too many tests
      */
     public function sendNow(User $user): void
     {
+        $key = 'test-push:'.$user->id;
+
+        if (RateLimiter::tooManyAttempts($key, self::TESTS_PER_10_MINUTES)) {
+            throw ValidationException::withMessages([
+                'push' => __('That\'s enough tests for now. Try again in :minutes minutes.', ['minutes' => (int) ceil(RateLimiter::availableIn($key) / 60)]),
+            ]);
+        }
+
+        RateLimiter::hit($key, 600);
         $this->deliver($user);
     }
 

@@ -57,6 +57,7 @@ new #[Title('Notifications')] class extends Component {
 
     public function sendTest(SendMorningSummaries $send): void
     {
+        $this->resetValidation();
         $send->sendNow(Auth::user());
         Flux::toast(__('Sent. It can take a few seconds.'));
     }

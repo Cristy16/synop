@@ -224,3 +224,16 @@ test('without VAPID keys the page says push isn\'t set up', function () {
 
     Livewire::test('pages::settings.notifications')->assertSee('aren\'t set up on this server yet');
 });
+
+test('"Send a test" works 3 times every 10 minutes', function () {
+    $this->actingAs($this->user);
+    $page = Livewire::test('pages::settings.notifications');
+
+    $page->call('sendTest')->call('sendTest')->call('sendTest')->assertHasNoErrors();
+    $page->call('sendTest')->assertHasErrors('push')->assertSee('enough tests for now');
+    Notification::assertSentTimes(MorningSummaryNotification::class, 3);
+
+    $this->travel(11)->minutes();
+    $page->call('sendTest')->assertHasNoErrors();
+    Notification::assertSentTimes(MorningSummaryNotification::class, 4);
+});
