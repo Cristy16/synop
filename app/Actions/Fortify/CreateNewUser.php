@@ -8,12 +8,17 @@ use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 
 class CreateNewUser implements CreatesNewUsers
 {
     use PasswordValidationRules, ProfileValidationRules;
+
+    /** New accounts per network address per hour (audit finding 3, D-054). */
+    public const PER_HOUR = 10;
 
     public function __construct(
         private CreateDefaultCategories $createDefaultCategories,
@@ -28,12 +33,22 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
+        $key = 'register:'.request()->ip();
+
+        if (RateLimiter::tooManyAttempts($key, self::PER_HOUR)) {
+            throw ValidationException::withMessages([
+                'email' => __('Too many new accounts from this network. Try again in :minutes minutes.', [
+                    'minutes' => (int) ceil(RateLimiter::availableIn($key) / 60),
+                ]),
+            ]);
+        }
+
         Validator::make($input, [
             ...$this->profileRules(),
             'password' => $this->passwordRules(),
         ])->validate();
 
-        return DB::transaction(function () use ($input) {
+        $user = DB::transaction(function () use ($input) {
             $user = User::create([
                 'name' => $input['name'],
                 'email' => $input['email'],
@@ -45,5 +60,9 @@ class CreateNewUser implements CreatesNewUsers
 
             return $user;
         });
+
+        RateLimiter::hit($key, 3600);
+
+        return $user;
     }
 }
