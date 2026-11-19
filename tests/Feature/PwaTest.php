@@ -43,3 +43,16 @@ test('sign-in pages link the manifest too, without the app navigation', function
         ->assertSee('rel="manifest"', false)
         ->assertDontSee('data-test="bottom-nav"', false);
 });
+
+test('pages send browser safety headers', function () {
+    $this->actingAs(User::factory()->create());
+
+    $this->get(route('today'))
+        ->assertHeader('X-Frame-Options', 'DENY')
+        ->assertHeader('X-Content-Type-Options', 'nosniff')
+        ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+        ->assertHeaderMissing('Strict-Transport-Security');
+
+    expect($this->get(route('login'))->headers->get('Content-Security-Policy'))->toContain("frame-ancestors 'none'");
+    $this->get('https://localhost/login')->assertHeader('Strict-Transport-Security', 'max-age=31536000');
+});
