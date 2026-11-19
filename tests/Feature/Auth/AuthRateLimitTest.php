@@ -33,3 +33,24 @@ test('failed sign-ups don\'t use up the limit', function () {
         'name' => 'Real', 'email' => 'real@example.com', 'password' => 'password', 'password_confirmation' => 'password',
     ])->assertSessionHasNoErrors();
 });
+
+test('5 wrong password confirmations a minute, then a wait', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    for ($i = 1; $i <= 5; $i++) {
+        $this->post(route('password.confirm.store'), ['password' => 'wrong'])->assertSessionHasErrors('password');
+    }
+
+    $this->post(route('password.confirm.store'), ['password' => 'password'])
+        ->assertSessionHasErrors(['password' => 'Too many tries. Wait 60 seconds and try again.']);
+
+    $this->travel(61)->seconds();
+    $this->post(route('password.confirm.store'), ['password' => 'password'])->assertSessionHasNoErrors();
+});
+
+test('the right password still confirms straight away', function () {
+    $this->actingAs(User::factory()->create());
+
+    $this->post(route('password.confirm.store'), ['password' => 'password'])->assertSessionHasNoErrors();
+});
