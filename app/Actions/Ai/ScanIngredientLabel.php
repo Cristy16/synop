@@ -3,7 +3,6 @@
 namespace App\Actions\Ai;
 
 use App\Enums\AiRequestKind;
-use App\Models\AiRequest;
 use App\Models\User;
 use App\Services\Ai\AiClient;
 use App\Services\Ai\AiQuota;
@@ -16,7 +15,7 @@ class ScanIngredientLabel
 
     public const MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-    public function __construct(private AiClient $ai, private AiQuota $quota) {}
+    public function __construct(private AiClient $ai, private ReserveAiCall $reserve) {}
 
     /**
      * Read the ingredient list from a label photo, for the user to review before
@@ -35,7 +34,9 @@ class ScanIngredientLabel
             throw ValidationException::withMessages(['labelPhoto' => __('Reading photos isn\'t set up yet. Paste or type the ingredients instead.')]);
         }
 
-        if ($this->quota->remaining($user) === 0) {
+        $call = $this->reserve->handle($user, AiRequestKind::IngredientScan);
+
+        if ($call === null) {
             throw ValidationException::withMessages(['labelPhoto' => __('You\'ve used today\'s :n AI checks. Paste or type the ingredients instead.', ['n' => AiQuota::DAILY_LIMIT])]);
         }
 
@@ -47,12 +48,7 @@ class ScanIngredientLabel
             $ok = false;
         }
 
-        $request = new AiRequest;
-        $request->user_id = $user->id;
-        $request->kind = AiRequestKind::IngredientScan;
-        $request->setAttribute('requested_on', now($user->timezone)->toDateString());
-        $request->succeeded = $ok;
-        $request->save();
+        ReserveAiCall::finish($call, $ok);
 
         if (! $ok) {
             throw ValidationException::withMessages(['labelPhoto' => __('Couldn\'t read an ingredient list from that photo. Try a sharper one, or paste the list.')]);

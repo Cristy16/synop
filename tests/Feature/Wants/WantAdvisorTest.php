@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Ai\ReserveAiCall;
 use App\Actions\Ai\ScanIngredientLabel;
 use App\Actions\Finance\CreateDebt;
 use App\Actions\PersonalCare\CreateConflictRule;
@@ -8,6 +9,7 @@ use App\Actions\PersonalCare\CreateStarterCareData;
 use App\Actions\Wants\AnalyzeWant;
 use App\Actions\Wants\CreateWant;
 use App\Actions\Wants\UpdateWant;
+use App\Enums\AiRequestKind;
 use App\Enums\AnalysisEngine;
 use App\Enums\Verdict;
 use App\Models\Account;
@@ -303,4 +305,20 @@ test('the product form reads a label photo too', function () {
         ->assertHasNoErrors()
         ->assertSet('ingredients_text', 'Aqua, Niacinamide, Glycerin')
         ->assertSet('labelPhoto', null);
+});
+
+test('a call is reserved before it is made, so the limit holds even if it crashes', function () {
+    $reserve = app(ReserveAiCall::class);
+
+    for ($i = 1; $i <= 10; $i++) {
+        expect($reserve->handle($this->user, AiRequestKind::WantVerdict))->not->toBeNull();
+    }
+
+    expect($reserve->handle($this->user, AiRequestKind::IngredientScan))->toBeNull()
+        ->and(AiRequest::count())->toBe(10)
+        ->and(AiRequest::where('succeeded', true)->count())->toBe(0, 'reserved calls count before they finish');
+
+    // With none left, the verdict comes from the rules and nothing is sent.
+    expect(($this->analyze)()->engine)->toBe(AnalysisEngine::Rules)
+        ->and($this->ai->verdictCalls)->toBe([]);
 });

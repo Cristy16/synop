@@ -2,15 +2,14 @@
 
 namespace App\Actions\Wants;
 
+use App\Actions\Ai\ReserveAiCall;
 use App\Enums\AiRequestKind;
 use App\Enums\AnalysisEngine;
 use App\Enums\Verdict;
-use App\Models\AiRequest;
 use App\Models\User;
 use App\Models\Want;
 use App\Models\WantAnalysis;
 use App\Services\Ai\AiClient;
-use App\Services\Ai\AiQuota;
 use App\Services\Ai\AiUnavailable;
 use App\Services\RulesVerdict;
 use App\Services\WantAdvisorInputs;
@@ -22,7 +21,7 @@ class AnalyzeWant
     public function __construct(
         private WantAdvisorInputs $inputs,
         private AiClient $ai,
-        private AiQuota $quota,
+        private ReserveAiCall $reserve,
     ) {}
 
     /**
@@ -53,14 +52,16 @@ class AnalyzeWant
 
         $reply = null;
 
-        if ($this->ai->isConfigured() && $this->quota->remaining($user) > 0) {
+        $call = $this->ai->isConfigured() ? $this->reserve->handle($user, AiRequestKind::WantVerdict) : null;
+
+        if ($call !== null) {
             try {
                 $reply = self::validated($this->ai->wantVerdict($inputs));
             } catch (AiUnavailable) {
                 $reply = null;
             }
 
-            $this->log($user, $reply !== null);
+            ReserveAiCall::finish($call, $reply !== null);
         }
 
         $engine = $reply === null ? AnalysisEngine::Rules : AnalysisEngine::Ai;
@@ -105,15 +106,5 @@ class AnalyzeWant
         }
 
         return ['verdict' => $verdict, 'reasons' => $reasons];
-    }
-
-    private function log(User $user, bool $succeeded): void
-    {
-        $request = new AiRequest;
-        $request->user_id = $user->id;
-        $request->kind = AiRequestKind::WantVerdict;
-        $request->setAttribute('requested_on', now($user->timezone)->toDateString());
-        $request->succeeded = $succeeded;
-        $request->save();
     }
 }
