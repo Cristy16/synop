@@ -123,9 +123,58 @@ class LinkPreview
         return [$host, $defaultPort, $ips[0]];
     }
 
+    /**
+     * Special-use ranges PHP's private/reserved flags don't cover (audit finding 1, D-054):
+     * shared/carrier NAT (incl. cloud metadata at 100.100.100.200), IETF, test and
+     * benchmark nets, multicast, and IPv6 forms that carry an IPv4 address inside.
+     */
+    public const BLOCKED_RANGES = [
+        '100.64.0.0/10', '192.0.0.0/24', '192.0.2.0/24', '198.18.0.0/15', '198.51.100.0/24',
+        '203.0.113.0/24', '224.0.0.0/4',
+        '64:ff9b::/96', '64:ff9b:1::/48', '100::/64', '2001::/32', '2001:db8::/32', '2002::/16', 'ff00::/8',
+    ];
+
     public static function isPublic(string $ip): bool
     {
-        return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+            return false;
+        }
+
+        $address = inet_pton($ip);
+
+        if ($address === false) {
+            return false;
+        }
+
+        foreach (self::BLOCKED_RANGES as $range) {
+            [$network, $bits] = explode('/', $range);
+            $base = (string) inet_pton($network);
+
+            if (strlen($base) === strlen($address) && self::samePrefix($address, $base, (int) $bits)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static function samePrefix(string $a, string $b, int $bits): bool
+    {
+        $bytes = intdiv($bits, 8);
+
+        if (substr($a, 0, $bytes) !== substr($b, 0, $bytes)) {
+            return false;
+        }
+
+        $rest = $bits % 8;
+
+        if ($rest === 0) {
+            return true;
+        }
+
+        $mask = (0xFF << (8 - $rest)) & 0xFF;
+
+        return (ord($a[$bytes]) & $mask) === (ord($b[$bytes]) & $mask);
     }
 
     private function parse(string $html, string $pageUrl, ?string $shop): LinkPreviewResult

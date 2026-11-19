@@ -129,6 +129,33 @@ test('private, local and odd addresses are refused before any request', function
     'with a password' => ['https://user:pass@shop.example.com/'],
 ]);
 
+test('special-use ranges that PHP does not flag are refused too', function (string $ip, bool $public) {
+    expect(LinkPreview::isPublic($ip))->toBe($public);
+})->with([
+    'carrier NAT / cloud metadata' => ['100.100.100.200', false],
+    'carrier NAT start' => ['100.64.0.1', false],
+    'just outside carrier NAT' => ['100.128.0.1', true],
+    'IETF' => ['192.0.0.8', false],
+    'benchmark' => ['198.18.0.1', false],
+    'test nets' => ['203.0.113.5', false],
+    'multicast' => ['224.0.0.1', false],
+    'IPv4-mapped loopback' => ['::ffff:127.0.0.1', false],
+    'NAT64 loopback' => ['64:ff9b::7f00:1', false],
+    '6to4 private' => ['2002:7f00:1::', false],
+    'Teredo' => ['2001::1', false],
+    'IPv6 multicast' => ['ff02::1', false],
+    'public IPv4' => ['8.8.8.8', true],
+    'public IPv6' => ['2606:4700::1111', true],
+]);
+
+test('a host whose name points at a special-use address is refused before any request', function () {
+    Http::fake();
+    app()->instance(HostResolver::class, new FakeHostResolver(['metadata.example.com' => ['100.100.100.200']]));
+
+    expect(app(LinkPreview::class)->fetch('http://metadata.example.com/')->ok)->toBeFalse();
+    Http::assertNothingSent();
+});
+
 test('a redirect to a private address is refused', function () {
     Http::fake([
         'sneaky.example.com/*' => Http::response('', 302, ['Location' => 'http://internal.example.com/secret']),
