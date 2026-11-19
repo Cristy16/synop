@@ -4,6 +4,7 @@ use App\Actions\Wants\AnalyzeWant;
 use App\Actions\Wants\ChangeWantStatus;
 use App\Actions\Wants\CreateWant;
 use App\Actions\Wants\DeleteWant;
+use App\Actions\Wants\FetchWantLink;
 use App\Actions\Wants\MarkWantBought;
 use App\Actions\Wants\UpdateWant;
 use App\Actions\Wants\WantBookkeeping;
@@ -20,7 +21,6 @@ use App\Models\Want;
 use App\Models\WantAnalysis;
 use App\Services\Ai\AiQuota;
 use App\Services\LinkPreview\DescriptionParser;
-use App\Services\LinkPreview\LinkPreview;
 use App\Services\LinkPreview\ShopName;
 use App\Services\SafeToSpend;
 use App\Support\SafeToSpendBreakdown;
@@ -183,7 +183,7 @@ new #[Title('Wants')] class extends Component {
      * Pasting a link tries to read the page (D-049). Only empty fields are filled,
      * so nothing the user typed is overwritten. A failed read never stops them.
      */
-    public function updatedUrl(LinkPreview $preview): void
+    public function updatedUrl(FetchWantLink $fetchLink): void
     {
         $url = trim($this->url);
         $this->fetchNotice = '';
@@ -194,7 +194,15 @@ new #[Title('Wants')] class extends Component {
             return;
         }
 
-        $result = $preview->fetch($url);
+        $result = $fetchLink->handle(Auth::user(), $url);
+
+        if ($result === null) {
+            $this->fetch_status = FetchStatus::Manual->value;
+            $this->fetchNotice = 'limited';
+            $this->shop = $this->shop === '' ? (ShopName::from($url) ?? '') : $this->shop;
+
+            return;
+        }
 
         if ($this->shop === '') {
             $this->shop = $result->shop ?? ShopName::from($url) ?? '';
@@ -441,7 +449,11 @@ new #[Title('Wants')] class extends Component {
             <div>
                 <flux:input wire:model.live.blur="url" type="url" :label="__('Link')" :placeholder="__('Paste a product link (optional)')" data-test="want-url" />
                 <div wire:loading wire:target="url" class="mt-1 text-xs text-zinc-500">{{ __('Reading the page…') }}</div>
-                @if ($fetchNotice === 'failed')
+                @if ($fetchNotice === 'limited')
+                    <flux:text class="mt-1 text-xs text-amber-700 dark:text-amber-400" data-test="fetch-limited">
+                        {{ __('Too many links at once. Fill in the details yourself, or try again in a minute.') }}
+                    </flux:text>
+                @elseif ($fetchNotice === 'failed')
                     <flux:text class="mt-1 text-xs text-amber-700 dark:text-amber-400" data-test="fetch-failed">
                         {{ __('Couldn\'t read this page (shops often block it). Fill in the details, or paste the product description below.') }}
                     </flux:text>

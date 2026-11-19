@@ -208,6 +208,30 @@ test('a blocked page shows a friendly message, and manual entry still works', fu
     expect(Want::sole())->title->toBe('Typed by hand')->fetch_status->toBe(FetchStatus::Failed);
 });
 
+test('reading links is limited to 20 a minute per user; past that, the details are typed', function () {
+    Http::fake(['shopee.ph/*' => Http::response('<html><head><title>Item</title></head></html>')]);
+    $page = Livewire::test('pages::wants.index')->call('create');
+
+    for ($i = 1; $i <= 20; $i++) {
+        $page->set('url', 'https://shopee.ph/item-'.$i)->assertSet('fetch_status', 'fetched');
+    }
+
+    $page->set('url', 'https://shopee.ph/item-21')
+        ->assertSet('fetch_status', 'manual')
+        ->assertSet('shop', 'Shopee')
+        ->assertSee('Too many links at once');
+    Http::assertSentCount(20);
+
+    // Someone else isn't affected.
+    $this->actingAs(User::factory()->create());
+    Livewire::test('pages::wants.index')->call('create')->set('url', 'https://shopee.ph/other')->assertSet('fetch_status', 'fetched');
+
+    // A minute later it works again.
+    $this->actingAs($this->user);
+    $this->travel(61)->seconds();
+    $page->set('url', 'https://shopee.ph/item-22')->assertSet('fetch_status', 'fetched');
+});
+
 test('pasting the description fills an empty title and price, but never overwrites', function () {
     Livewire::test('pages::wants.index')
         ->call('create')
