@@ -373,3 +373,8 @@ Newest entries go at the bottom. Each entry gives the date, the decision, the re
   7. `SecurityHeaders` middleware on the web group: `X-Frame-Options: DENY`, CSP `frame-ancestors 'none'; base-uri 'self'; object-src 'none'`, `nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, a Permissions-Policy, and HSTS on HTTPS requests. A full script CSP was left out: Livewire/Alpine need `unsafe-eval` without their CSP builds.
   8. The verdict prompt marks the product fields as untrusted page text; title and shop are cut to 120/60 characters.
 - **Before going live (not code):** `APP_DEBUG=false`, `SESSION_SECURE_COOKIE=true`, HTTPS only. Want images load from shop servers (they see the viewer's IP; `no-referrer` is set).
+
+### D-055 · Project subagents
+- **Date:** 2026-11-19 · **Source:** BUILD-PROMPTS Prompt 11.1
+- **Decision:** Four agents in `.claude/agents/`: `code-reviewer` (read-only; CLAUDE.md rules on a diff), `test-writer` (Pest tests incl. isolation; may run tests, never changes app code), `security-auditor` (read-only; the D-054 checklist on changed files), `docs-keeper` (ROADMAP, DECISIONS, DATABASE only). Each has only the tools it needs; Bash in the read-only agents is limited to reading git and routes by their instructions.
+- **Reason:** Repeatable checks that follow this project's rules without re-explaining them.
